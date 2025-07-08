@@ -1,37 +1,46 @@
-# 👗 Wedding Dress Filter Demo
+# 👰‍♀️ Best Dressed
 
-A full-stack web app that showcases dynamic filtering for an ecommerce-style product catalog — built around wedding dresses.
+A full-stack filtering demo... that just so happens to be about wedding dresses.  
+Built for fun. Stayed for the filters. 💅
 
-## ✨ Features
+---
 
-- Filter dresses by attributes like silhouette, fabric, color, price, size, and more
-- Real-time frontend filtering with backend API support
-- Clean, professional UI for both business and consumer demo use
-- Scalable architecture with decoupled frontend and backend
+## ✨ What It Is
 
-## 🛠️ Tech Stack
+Best Dressed is a modern, full-stack web app that lets users filter through wedding dresses by color, silhouette, style, and more. It's a demonstration of:
 
-### Frontend
-- React
-- Tailwind CSS
-- Axios (for API calls)
+- 💻 React frontend with Vite + Tailwind CSS
+- 🧠 Flask backend serving dress data via a REST API
+- 🗃️ PostgreSQL for storing dresses and attributes
+- 🔄 Live filter syncing via query params
+- 🌸 Styled in soft mauve, because elegance
+- 🧪 Built with love, sarcasm, and many error messages
 
-### Backend
-- Python + Flask
-- SQLite (via SQLAlchemy)
-- RESTful API
+---
 
-### Tools
-- Git + GitHub
-- Postman (for API testing)
-- Vite or Create React App (React setup)
+## 🧩 Tech Stack
+
+| Layer         | Tooling                         |
+|---------------|----------------------------------|
+| Frontend      | React, TypeScript, Tailwind CSS |
+| Backend       | Flask, Flask-CORS               |
+| Database      | PostgreSQL                      |
+| Dev Tools     | Vite, npm, concurrently         |
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Clone the Repository
+### Prerequisites
+- Node.js + npm
+- Python 3.11+
+- PostgreSQL
+
+### Backend Setup
 
 ```bash
-git clone https://github.com/your-username/wedding-dress-filters.git
-cd wedding-dress-filters
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python app.py
