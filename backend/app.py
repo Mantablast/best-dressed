@@ -44,7 +44,8 @@ def get_dresses():
         query = query.filter(WeddingDress.price <= price_max)
 
     results = query.all()
-    return jsonify([dress.serialize() for dress in results])
+    return jsonify([dress.to_dict() for dress in results])
+
 
 
 if __name__ == "__main__":
