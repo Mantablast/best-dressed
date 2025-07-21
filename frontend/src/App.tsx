@@ -7,13 +7,24 @@ type Dress = {
   id: number;
   name: string;
   silhouette: string;
+  shipin48hrs: boolean;
   neckline: string;
+  strapsleevelayout: string;
+  length: string;
+  collection: string;
   fabric: string;
   color: string;
-  has_pockets: boolean;
-  corset_back: boolean;
+  backstyle: string;
   price: number;
   size_range: string;
+  tags: string[];
+  weddingvenue: string[];
+  season: string;
+  embellishments: string[];
+  features: string[];
+  has_pockets: boolean;
+  corset_back: boolean;
+  image_path: string;
 };
 
 function App() {
@@ -33,7 +44,8 @@ function App() {
       if (value !== '') params[key] = value;
     });
 
-    axios.get('http://127.0.0.1:5000/dresses', { params })
+    axios.get('http://127.0.0.1:5050/api/dresses', { params })
+
       .then(res => setDresses(res.data))
       .catch(err => console.error("Error fetching dresses:", err));
   };

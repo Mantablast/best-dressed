@@ -21,6 +21,7 @@ dresses = [
         season="spring",
         embellishments=["beading", "embroidery"],
         features=["pockets", "corset back", "convertible", "Stay-in-place straps"],
+        image_path="1.png"
     ),
     WeddingDress(
         name="Midnight Tulle",
@@ -31,7 +32,7 @@ dresses = [
         length="Floor Length",
         collection='Midnight Bloom',
         fabric="Tulle",
-        color="Champagne",
+        color="Black",
         backstyle="Zipper",
         price=2800,
         size_range="4-22",
@@ -39,7 +40,8 @@ dresses = [
         weddingvenue=["ballroom", "cathedral"],
         season="winter",
         embellishments=["sequins", "beading"],
-        features=["removable train", "built-in bra"]
+        features=["removable train", "built-in bra"],
+        image_path="2.png"
     ),
     WeddingDress(
         name="Satin Whisper",
@@ -58,7 +60,8 @@ dresses = [
         weddingvenue=["rooftop", "courthouse"],
         season="summer",
         embellishments=["none"],
-        features=["pockets", "adjustable straps"]
+        features=["pockets", "adjustable straps"],
+        image_path="3.png"
     ),
     WeddingDress(
         name="Garden Muse",
@@ -77,7 +80,8 @@ dresses = [
         weddingvenue=["garden", "vineyard"],
         season="spring",
         embellishments=["floral appliqué", "lace"],
-        features=["eco-friendly fabric", "lightweight"]
+        features=["eco-friendly fabric", "lightweight"],
+        image_path="4.png"
     ),
     WeddingDress(
         name="Moonlight Veil",
@@ -96,7 +100,8 @@ dresses = [
         weddingvenue=["hotel", "evening"],
         season="fall",
         embellishments=["pearls", "crystals"],
-        features=["corset back", "sweeping train", "shimmer finish"]
+        features=["corset back", "sweeping train", "shimmer finish"],
+        image_path="5.png"
     ),
     WeddingDress(
         name="Golden Hour",
@@ -115,7 +120,8 @@ dresses = [
         weddingvenue=["garden", "terrace"],
         season="summer",
         embellishments=["glitter tulle", "lace overlay"],
-        features=["pockets", "convertible straps", "lightweight skirt"]
+        features=["pockets", "convertible straps", "lightweight skirt"],
+        image_path="6.png"
     ),
     WeddingDress(
         name="Whispering Rose",
@@ -134,7 +140,8 @@ dresses = [
         weddingvenue=["garden", "chapel"],
         season="spring",
         embellishments=["floral embroidery", "beading"],
-        features=["illusion neckline", "full skirt", "pockets"]
+        features=["illusion neckline", "full skirt", "pockets"],
+        image_path="7.png"
     ),
     WeddingDress(
         name="Ocean Pearl",
@@ -153,7 +160,8 @@ dresses = [
         weddingvenue=["beach", "cruise"],
         season="summer",
         embellishments=["none"],
-        features=["pockets", "built-in support", "anti-wrinkle fabric"]
+        features=["pockets", "built-in support", "anti-wrinkle fabric"],
+        image_path="8.png"
     ),
     WeddingDress(
         name="Crystal Breeze",
@@ -172,7 +180,8 @@ dresses = [
         weddingvenue=["mountain", "outdoor"],
         season="fall",
         embellishments=["shimmer organza", "rhinestones"],
-        features=["corset back", "airy layers", "easy bustle"]
+        features=["corset back", "airy layers", "easy bustle"],
+        image_path="9.png"
     ),
     WeddingDress(
         name="Twilight Mist",
@@ -191,11 +200,14 @@ dresses = [
         weddingvenue=["indoor", "loft"],
         season="winter",
         embellishments=["lace", "beading"],
-        features=["illusion neckline", "fitted bodice", "comfortable lining"]
+        features=["illusion neckline", "fitted bodice", "comfortable lining"],
+        image_path="10.png"
     ),
 ]
 
 with app.app_context():
+    db.drop_all()
+    db.create_all()
     db.session.bulk_save_objects(dresses)
     db.session.commit()
     print("🌸 Dresses added to the collection!")

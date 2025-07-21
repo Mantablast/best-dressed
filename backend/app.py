@@ -1,54 +1,81 @@
-from flask import Flask, jsonify, request
+import os
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from models import db, WeddingDress
 
-app = Flask(__name__)
-CORS(app, origins=["http://localhost:5173", "http://127.0.0.1:5173"])
+# Create Flask app and config
+app = Flask(__name__, instance_relative_config=True)
 
-# Connect to PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/best_dressed'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+basedir = os.path.abspath(os.path.dirname(__file__))
+db_path = os.path.join(basedir, "instance", "dresses.db")
 
-db.init_app(app)
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-@app.route("/")
-def home():
-    return {"message": "Welcome to Best Dressed!"}
+# Initialize extensions
+db = SQLAlchemy(app)
+CORS(app)
 
-@app.route("/dresses", methods=["GET"])
+# Define model
+class WeddingDress(db.Model):
+    __tablename__ = "wedding_dresses"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    image_path = db.Column(db.String(200))
+    silhouette = db.Column(db.String(50))
+    shipin48hrs = db.Column(db.Boolean)
+    neckline = db.Column(db.String(50))
+    strapsleevelayout = db.Column(db.String(50))
+    length = db.Column(db.String(50))
+    collection = db.Column(db.String(50))
+    fabric = db.Column(db.String(50))
+    color = db.Column(db.String(50))
+    backstyle = db.Column(db.String(50))
+    price = db.Column(db.Float)
+    size_range = db.Column(db.String(20))
+    tags = db.Column(db.PickleType)
+    weddingvenue = db.Column(db.PickleType)
+    season = db.Column(db.String(20))
+    embellishments = db.Column(db.PickleType)
+    features = db.Column(db.PickleType)
+    has_pockets = db.Column(db.Boolean)
+    corset_back = db.Column(db.Boolean)
+
+# Route to get all dresses
+@app.route("/api/dresses")
 def get_dresses():
-    query = WeddingDress.query
+    dresses = WeddingDress.query.all()
+    print(f"🔍 Found {len(dresses)} dresses in DB at: {db_path}")
 
-    # Grab filter params from URL
-    color = request.args.get("color")
-    has_pockets = request.args.get("has_pockets")
-    corset_back = request.args.get("corset_back")
-    price_min = request.args.get("priceMin", type=int)
-    price_max = request.args.get("priceMax", type=int)
+    return jsonify([
+        {
+            "id": d.id,
+            "name": d.name,
+            "image_path": d.image_path,
+            "silhouette": d.silhouette,
+            "shipin48hrs": d.shipin48hrs,
+            "neckline": d.neckline,
+            "strapsleevelayout": d.strapsleevelayout,
+            "length": d.length,
+            "collection": d.collection,
+            "fabric": d.fabric,
+            "color": d.color,
+            "backstyle": d.backstyle,
+            "price": d.price,
+            "size_range": d.size_range,
+            "tags": d.tags,
+            "weddingvenue": d.weddingvenue,
+            "season": d.season,
+            "embellishments": d.embellishments,
+            "features": d.features,
+            "has_pockets": d.has_pockets,
+            "corset_back": d.corset_back
+        }
+        for d in dresses
+    ])
 
-    # Apply filters
-    if color:
-        query = query.filter_by(color=color)
-
-    if has_pockets is not None:
-        query = query.filter_by(has_pockets=has_pockets.lower() == "true")
-
-    if corset_back is not None:
-        query = query.filter_by(corset_back=corset_back.lower() == "true")
-
-    if price_min is not None:
-        query = query.filter(WeddingDress.price >= price_min)
-
-    if price_max is not None:
-        query = query.filter(WeddingDress.price <= price_max)
-
-    results = query.all()
-    return jsonify([dress.to_dict() for dress in results])
-
-
-
+# Run the app
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
+    print(f"🌐 Using database at: {db_path}")
+    app.run(debug=True, host="0.0.0.0", port=5050)
