@@ -2,6 +2,7 @@ import os
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from flask import request
 
 # Create Flask app and config
 app = Flask(__name__, instance_relative_config=True)
@@ -45,8 +46,43 @@ class WeddingDress(db.Model):
 # Route to get all dresses
 @app.route("/api/dresses")
 def get_dresses():
-    dresses = WeddingDress.query.all()
-    print(f"🔍 Found {len(dresses)} dresses in DB at: {db_path}")
+    query = WeddingDress.query
+
+    # Apply filters from query params
+    color = request.args.get("color")
+    if color:
+        query = query.filter(WeddingDress.color.ilike(f"%{color}%"))
+
+    silhouette = request.args.get("silhouette")
+    if silhouette:
+        query = query.filter(WeddingDress.silhouette.ilike(f"%{silhouette}%"))
+
+    neckline = request.args.get("neckline")
+    if neckline:
+        query = query.filter(WeddingDress.neckline.ilike(f"%{neckline}%"))
+
+    has_pockets = request.args.get("has_pockets")
+    if has_pockets == "true":
+        query = query.filter(WeddingDress.has_pockets.is_(True))
+    elif has_pockets == "false":
+        query = query.filter(WeddingDress.has_pockets.is_(False))
+
+    corset_back = request.args.get("corset_back")
+    if corset_back == "true":
+        query = query.filter(WeddingDress.corset_back.is_(True))
+    elif corset_back == "false":
+        query = query.filter(WeddingDress.corset_back.is_(False))
+
+    price_min = request.args.get("priceMin", type=float)
+    if price_min is not None:
+        query = query.filter(WeddingDress.price >= price_min)
+
+    price_max = request.args.get("priceMax", type=float)
+    if price_max is not None:
+        query = query.filter(WeddingDress.price <= price_max)
+
+    results = query.all()
+    print(f"🔍 Filtered to {len(results)} dresses in DB at: {db_path}")
 
     return jsonify([
         {
@@ -72,8 +108,9 @@ def get_dresses():
             "has_pockets": d.has_pockets,
             "corset_back": d.corset_back
         }
-        for d in dresses
+        for d in results
     ])
+
 
 # Run the app
 if __name__ == "__main__":
