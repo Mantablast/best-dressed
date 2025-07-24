@@ -1,23 +1,20 @@
 import os
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask import request
 
-# Create Flask app and config
+# App setup
 app = Flask(__name__, instance_relative_config=True)
-
 basedir = os.path.abspath(os.path.dirname(__file__))
 db_path = os.path.join(basedir, "instance", "dresses.db")
 
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# Initialize extensions
 db = SQLAlchemy(app)
 CORS(app)
 
-# Define model
+# Model
 class WeddingDress(db.Model):
     __tablename__ = "wedding_dresses"
 
@@ -43,76 +40,78 @@ class WeddingDress(db.Model):
     has_pockets = db.Column(db.Boolean)
     corset_back = db.Column(db.Boolean)
 
-# Route to get all dresses
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "image_path": self.image_path,
+            "silhouette": self.silhouette,
+            "shipin48hrs": self.shipin48hrs,
+            "neckline": self.neckline,
+            "strapsleevelayout": self.strapsleevelayout,
+            "length": self.length,
+            "collection": self.collection,
+            "fabric": self.fabric,
+            "color": self.color,
+            "backstyle": self.backstyle,
+            "price": self.price,
+            "size_range": self.size_range,
+            "tags": self.tags,
+            "weddingvenue": self.weddingvenue,
+            "season": self.season,
+            "embellishments": self.embellishments,
+            "features": self.features,
+            "has_pockets": self.has_pockets,
+            "corset_back": self.corset_back
+        }
+# Utility
+def match_any(field_value, filter_values):
+    return any(val.lower() in field_value.lower() for val in filter_values)
+
+# API route with filters
 @app.route("/api/dresses")
 def get_dresses():
     query = WeddingDress.query
 
-    # Apply filters from query params
-    color = request.args.get("color")
-    if color:
-        query = query.filter(WeddingDress.color.ilike(f"%{color}%"))
+    # Handle multi-select filters
+    multi_filters = {
+        "color": request.args.get("color", "").split(",") if request.args.get("color") else [],
+        "silhouette": request.args.get("silhouette", "").split(",") if request.args.get("silhouette") else [],
+        "neckline": request.args.get("neckline", "").split(",") if request.args.get("neckline") else [],
+        "length": request.args.get("length", "").split(",") if request.args.get("length") else [],
+        "fabric": request.args.get("fabric", "").split(",") if request.args.get("fabric") else [],
+        "backstyle": request.args.get("backstyle", "").split(",") if request.args.get("backstyle") else [],
+        "collection": request.args.get("collection", "").split(",") if request.args.get("collection") else [],
+        "season": request.args.get("season", "").split(",") if request.args.get("season") else [],
+        "strapsleevelayout": request.args.get("strapsleevelayout", "").split(",") if request.args.get(
+            "strapsleevelayout") else [],
+    }
 
-    silhouette = request.args.get("silhouette")
-    if silhouette:
-        query = query.filter(WeddingDress.silhouette.ilike(f"%{silhouette}%"))
+    for field, values in multi_filters.items():
+        if values:
+            query = query.filter(getattr(WeddingDress, field).in_(values))
 
-    neckline = request.args.get("neckline")
-    if neckline:
-        query = query.filter(WeddingDress.neckline.ilike(f"%{neckline}%"))
+    # Handle boolean filters
+    bool_fields = ["has_pockets", "corset_back", "shipin48hrs"]
+    for field in bool_fields:
+        val = request.args.get(field)
+        if val == "true":
+            query = query.filter(getattr(WeddingDress, field).is_(True))
+        elif val == "false":
+            query = query.filter(getattr(WeddingDress, field).is_(False))
 
-    has_pockets = request.args.get("has_pockets")
-    if has_pockets == "true":
-        query = query.filter(WeddingDress.has_pockets.is_(True))
-    elif has_pockets == "false":
-        query = query.filter(WeddingDress.has_pockets.is_(False))
+    # Handle price range
+    price_min = request.args.get("priceMin")
+    price_max = request.args.get("priceMax")
+    if price_min:
+        query = query.filter(WeddingDress.price >= float(price_min))
+    if price_max:
+        query = query.filter(WeddingDress.price <= float(price_max))
 
-    corset_back = request.args.get("corset_back")
-    if corset_back == "true":
-        query = query.filter(WeddingDress.corset_back.is_(True))
-    elif corset_back == "false":
-        query = query.filter(WeddingDress.corset_back.is_(False))
+    dresses = query.all()
 
-    price_min = request.args.get("priceMin", type=float)
-    if price_min is not None:
-        query = query.filter(WeddingDress.price >= price_min)
+    return jsonify([dress.to_dict() for dress in dresses])
 
-    price_max = request.args.get("priceMax", type=float)
-    if price_max is not None:
-        query = query.filter(WeddingDress.price <= price_max)
-
-    results = query.all()
-    print(f"🔍 Filtered to {len(results)} dresses in DB at: {db_path}")
-
-    return jsonify([
-        {
-            "id": d.id,
-            "name": d.name,
-            "image_path": d.image_path,
-            "silhouette": d.silhouette,
-            "shipin48hrs": d.shipin48hrs,
-            "neckline": d.neckline,
-            "strapsleevelayout": d.strapsleevelayout,
-            "length": d.length,
-            "collection": d.collection,
-            "fabric": d.fabric,
-            "color": d.color,
-            "backstyle": d.backstyle,
-            "price": d.price,
-            "size_range": d.size_range,
-            "tags": d.tags,
-            "weddingvenue": d.weddingvenue,
-            "season": d.season,
-            "embellishments": d.embellishments,
-            "features": d.features,
-            "has_pockets": d.has_pockets,
-            "corset_back": d.corset_back
-        }
-        for d in results
-    ])
-
-
-# Run the app
 if __name__ == "__main__":
-    print(f"🌐 Using database at: {db_path}")
+    print(f"🌐 Using DB at {db_path}")
     app.run(debug=True, host="0.0.0.0", port=5050)
