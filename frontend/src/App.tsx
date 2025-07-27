@@ -42,49 +42,53 @@ type Filters = {
   has_pockets: string;
   corset_back: string;
   shipin48hrs: string;
-  priceMin: string;
-  priceMax: string;
+  price: string[];
 };
+
 
 function App() {
   const [dresses, setDresses] = useState<Dress[]>([]);
-  const [filters, setFilters] = useState({
-  color: [] as string[],
-  silhouette: [] as string[],
-  neckline: [] as string[],
-  length: [] as string[],
-  fabric: [] as string[],
-  backstyle: [] as string[],
-  collection: [] as string[],
-  season: [] as string[],
-  strapsleevelayout: [] as string[],
-  tags: [] as string[],
-  embellishments: [] as string[],
-  features: [] as string[],
+  const [filters, setFilters] = useState<Filters>({
+  color: [],
+  silhouette: [],
+  neckline: [],
+  length: [],
+  fabric: [],
+  backstyle: [],
+  tags: [],
+  embellishments: [],
+  features: [],
+  collection: [],
+  season: [],
   shipin48hrs: "",
   has_pockets: "",
   corset_back: "",
-  priceMin: "",
-  priceMax: ""
+  price: [] as string[]
 });
 
 
+
   const fetchDresses = () => {
-    const params: any = {};
+  const searchParams = new URLSearchParams();
 
-    Object.entries(filters).forEach(([key, value]) => {
-      if (Array.isArray(value) && value.length > 0) {
-        params[key] = value.join(',');
-      } else if (value !== '') {
-        params[key] = value;
-      }
-    });
+  Object.entries(filters).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      value.forEach((val) => {
+        if (val) {
+          searchParams.append(key, val);
+        }
+      });
+    } else if (value !== '') {
+      searchParams.append(key, value);
+    }
+  });
 
-    axios
-      .get('http://127.0.0.1:5050/api/dresses', { params })
-      .then((res) => setDresses(res.data))
-      .catch((err) => console.error('Error fetching dresses:', err));
-  };
+  axios
+    .get(`http://127.0.0.1:5050/api/dresses?${searchParams.toString()}`)
+    .then((res) => setDresses(res.data))
+    .catch((err) => console.error('Error fetching dresses:', err));
+};
+
 
   useEffect(() => {
     fetchDresses();

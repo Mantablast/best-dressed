@@ -28,6 +28,26 @@ class WeddingDress(db.Model):
     has_pockets = db.Column(db.Boolean)
     corset_back = db.Column(db.Boolean)
 
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "price": self.price,
+            "silhouette": self.silhouette,
+            "neckline": self.neckline,
+            "length": self.length,
+            "collection": self.collection,
+            "fabric": self.fabric,
+            "color": self.color,
+            "backstyle": self.backstyle,
+            "tags": self.tags,
+            "features": self.features,
+            "embellishments": self.embellishments,
+            "has_pockets": self.has_pockets,
+            "corset_back": self.corset_back,
+            "shipin48hrs": self.shipin48hrs,
+            "image_path": self.image_path
+        }
     def to_dict(self):
         return {
             "id": self.id,

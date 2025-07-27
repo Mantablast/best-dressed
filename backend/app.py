@@ -2,7 +2,7 @@ import os
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-
+from sqlalchemy import or_
 # App setup
 app = Flask(__name__, instance_relative_config=True)
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -40,6 +40,9 @@ class WeddingDress(db.Model):
     has_pockets = db.Column(db.Boolean)
     corset_back = db.Column(db.Boolean)
 
+    def serialize(self):
+        return self.to_dict()
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -71,46 +74,39 @@ def match_any(field_value, filter_values):
 # API route with filters
 @app.route("/api/dresses")
 def get_dresses():
-    query = WeddingDress.query
+    query = db.session.query(WeddingDress)
 
-    # Handle multi-select filters
-    multi_filters = {
-        "color": request.args.get("color", "").split(",") if request.args.get("color") else [],
-        "silhouette": request.args.get("silhouette", "").split(",") if request.args.get("silhouette") else [],
-        "neckline": request.args.get("neckline", "").split(",") if request.args.get("neckline") else [],
-        "length": request.args.get("length", "").split(",") if request.args.get("length") else [],
-        "fabric": request.args.get("fabric", "").split(",") if request.args.get("fabric") else [],
-        "backstyle": request.args.get("backstyle", "").split(",") if request.args.get("backstyle") else [],
-        "collection": request.args.get("collection", "").split(",") if request.args.get("collection") else [],
-        "season": request.args.get("season", "").split(",") if request.args.get("season") else [],
-        "strapsleevelayout": request.args.get("strapsleevelayout", "").split(",") if request.args.get(
-            "strapsleevelayout") else [],
-    }
+    # 👇 Log the raw price filters
+    price_ranges = request.args.getlist('price')
+    print("Received price ranges:", price_ranges)
 
-    for field, values in multi_filters.items():
-        if values:
-            query = query.filter(getattr(WeddingDress, field).in_(values))
+    price_conditions = []
 
-    # Handle boolean filters
-    bool_fields = ["has_pockets", "corset_back", "shipin48hrs"]
-    for field in bool_fields:
-        val = request.args.get(field)
-        if val == "true":
-            query = query.filter(getattr(WeddingDress, field).is_(True))
-        elif val == "false":
-            query = query.filter(getattr(WeddingDress, field).is_(False))
+    for range_str in price_ranges:
+        print("Processing range:", range_str)  # 👈 add this
+        if '+' in range_str:
+            try:
+                min_price = int(range_str.replace('+', ''))
+                price_conditions.append(WeddingDress.price >= min_price)
+            except ValueError as e:
+                print("Error parsing + range:", e)
+        else:
+            try:
+                min_str, max_str = range_str.split('-')
+                min_price = int(min_str)
+                max_price = int(max_str)
+                price_conditions.append(WeddingDress.price.between(min_price, max_price))
+            except ValueError as e:
+                print("Error parsing range:", range_str, e)
 
-    # Handle price range
-    price_min = request.args.get("priceMin")
-    price_max = request.args.get("priceMax")
-    if price_min:
-        query = query.filter(WeddingDress.price >= float(price_min))
-    if price_max:
-        query = query.filter(WeddingDress.price <= float(price_max))
+    if price_conditions:
+        query = query.filter(or_(*price_conditions))
 
-    dresses = query.all()
+    results = query.all()
+    serialized = [dress.serialize() for dress in results]
+    return jsonify(serialized)
 
-    return jsonify([dress.to_dict() for dress in dresses])
+
 
 if __name__ == "__main__":
     print(f"🌐 Using DB at {db_path}")

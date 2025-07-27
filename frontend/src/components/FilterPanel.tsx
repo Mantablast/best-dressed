@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+const priceRanges = ['0-500', '500-1000', '1000-1500', '1500-2000', '2000+'];
+
 type Filters = {
   [key: string]: string[] | string;
 };
@@ -66,10 +68,7 @@ const FilterPanel = ({ filters, setFilters }: Props) => {
     }));
   };
 
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-  };
+
 
   return (
     <div className="w-72 bg-white border border-mauve-200 rounded-2xl shadow p-6 h-fit sticky top-8 overflow-y-auto max-h-screen">
@@ -91,38 +90,26 @@ const FilterPanel = ({ filters, setFilters }: Props) => {
         </AccordionSection>
       ))}
 
-      {booleanFilters.map(field => (
-        <div key={field} className="mb-2">
-          <label className="flex items-center text-sm text-mauve-800">
-            <input
-              type="checkbox"
-              checked={filters[field] === 'true'}
-              onChange={() => handleBoolean(field)}
-              className="mr-2"
-            />
-            {field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-          </label>
-        </div>
-      ))}
 
-      <AccordionSection title="Price">
-        <label className="block text-sm font-medium text-mauve-800 mb-1">Min</label>
-        <input
-          type="number"
-          name="priceMin"
-          value={filters.priceMin || ''}
-          onChange={handlePriceChange}
-          className="w-full border rounded px-2 py-1 mb-2"
-        />
-        <label className="block text-sm font-medium text-mauve-800 mb-1">Max</label>
-        <input
-          type="number"
-          name="priceMax"
-          value={filters.priceMax || ''}
-          onChange={handlePriceChange}
-          className="w-full border rounded px-2 py-1"
-        />
-      </AccordionSection>
+
+<AccordionSection title="Price">
+  {priceRanges.map(range => (
+    <label key={range} className="flex items-center mb-1 text-sm text-mauve-800">
+      <input
+        type="checkbox"
+        checked={
+          Array.isArray(filters.price) && filters.price.includes(range)
+        }
+        onChange={() => handleMultiCheckbox('price', range)}
+        className="mr-2"
+      />
+      {range === '2000+'
+        ? '$2000+'
+        : `$${range.split('-')[0]} – $${range.split('-')[1]}`}
+    </label>
+  ))}
+</AccordionSection>
+
     </div>
   );
 };
