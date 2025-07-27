@@ -130,6 +130,11 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
     <div className="w-72 bg-white border border-mauve-200 rounded-2xl shadow p-6 h-fit sticky top-8 overflow-y-auto max-h-screen">
       <h2 className="text-xl font-bold mb-4">Filters</h2>
 
+<pre className="text-xs text-gray-400 bg-gray-50 p-2 rounded mb-4 overflow-x-auto">
+  {JSON.stringify(filters, null, 2)}
+</pre>
+
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

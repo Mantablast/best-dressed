@@ -84,6 +84,9 @@ const [priorityScores, setPriorityScores] = useState<{ [key: string]: number }>(
     }
   });
 
+console.log("Sending filters:", filters);
+console.log("Query string:", searchParams.toString());
+
   axios
     .get(`http://127.0.0.1:5050/api/dresses?${searchParams.toString()}`)
     .then((res) => setDresses(res.data))
