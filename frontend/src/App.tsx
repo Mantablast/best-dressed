@@ -3,6 +3,7 @@ import axios from 'axios';
 import FilterPanel from './components/FilterPanel';
 import DressList from './components/DressList';
 
+
 type Dress = {
   id: number;
   name: string;
@@ -65,7 +66,7 @@ function App() {
   corset_back: "",
   price: [] as string[]
 });
-
+const [priorityScores, setPriorityScores] = useState<{ [key: string]: number }>({});
 
 
   const fetchDresses = () => {
@@ -96,8 +97,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-mauve-50 p-8 flex gap-8">
-      <FilterPanel filters={filters} setFilters={setFilters} />
-      <DressList dresses={dresses} />
+      <FilterPanel
+  filters={filters}
+  setFilters={setFilters}
+  setPriorityScores={setPriorityScores}
+/>
+      <DressList dresses={dresses} priorityScores={priorityScores} />
+
     </div>
   );
 }

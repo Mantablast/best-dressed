@@ -1,3 +1,5 @@
+import React from 'react';
+
 type Dress = {
   id: number;
   name: string;
@@ -24,17 +26,55 @@ type Dress = {
 
 type Props = {
   dresses: Dress[];
+  priorityScores: { [key: string]: number };
 };
 
-const DressList = ({ dresses }: Props) => {
+const DressList = ({ dresses, priorityScores }: Props) => {
   if (dresses.length === 0)
     return <p className="text-gray-500">No dresses found.</p>;
+
+  // Calculate total importance score per dress
+  const scoredDresses = dresses.map((dress) => {
+    let score = 0;
+
+    const accumulateScore = (key: string, value: string | string[] | boolean) => {
+      if (Array.isArray(value)) {
+        value.forEach((v) => {
+          const match = `${key}:${v}`;
+          if (priorityScores[match]) score += priorityScores[match];
+        });
+      } else if (typeof value === 'boolean' && value === true) {
+        const match = `${key}:true`;
+        if (priorityScores[match]) score += priorityScores[match];
+      } else {
+        const match = `${key}:${value}`;
+        if (priorityScores[match]) score += priorityScores[match];
+      }
+    };
+
+    accumulateScore('color', dress.color);
+    accumulateScore('silhouette', dress.silhouette);
+    accumulateScore('neckline', dress.neckline);
+    accumulateScore('length', dress.length);
+    accumulateScore('fabric', dress.fabric);
+    accumulateScore('backstyle', dress.backstyle);
+    accumulateScore('collection', dress.collection);
+    accumulateScore('season', dress.season);
+    accumulateScore('tags', dress.tags);
+    accumulateScore('embellishments', dress.embellishments);
+    accumulateScore('features', dress.features);
+    accumulateScore('has_pockets', dress.has_pockets);
+    accumulateScore('corset_back', dress.corset_back);
+    accumulateScore('shipin48hrs', dress.shipin48hrs);
+
+    return { ...dress, score };
+  });
 
   return (
     <div className="flex-1">
       <h2 className="text-2xl font-bold mb-4">Results</h2>
       <div className="grid gap-6">
-        {dresses.map((dress) => (
+        {scoredDresses.map((dress) => (
           <div
             key={dress.id}
             className="flex bg-mauve-50 border border-mauve-200 rounded-2xl shadow p-6 transition hover:shadow-md"
@@ -45,51 +85,21 @@ const DressList = ({ dresses }: Props) => {
                 {dress.name}
               </h3>
               <div className="grid grid-cols-2 gap-2 text-sm text-mauve-800">
-                <p>
-                  <strong>Silhouette:</strong> {dress.silhouette}
-                </p>
-                <p>
-                  <strong>Ships in 48hrs:</strong>{" "}
-                  {dress.shipin48hrs ? "Yes" : "No"}
-                </p>
-                <p>
-                  <strong>Neckline:</strong> {dress.neckline}
-                </p>
-                <p>
-                  <strong>Sleeves:</strong> {dress.strapsleevelayout}
-                </p>
-                <p>
-                  <strong>Length:</strong> {dress.length}
-                </p>
-                <p>
-                  <strong>Collection:</strong> {dress.collection}
-                </p>
-                <p>
-                  <strong>Fabric:</strong> {dress.fabric}
-                </p>
-                <p>
-                  <strong>Color:</strong> {dress.color}
-                </p>
-                <p>
-                  <strong>Back Style:</strong> {dress.backstyle}
-                </p>
-                <p>
-                  <strong>Price:</strong> ${dress.price}
-                </p>
-                <p>
-                  <strong>Size Range:</strong> {dress.size_range}
-                </p>
-                <p>
-                  <strong>Season:</strong> {dress.season}
-                </p>
-                <p>
-                  <strong>Pockets:</strong>{" "}
-                  {dress.has_pockets ? "Yes" : "No"}
-                </p>
-                <p>
-                  <strong>Corset Back:</strong>{" "}
-                  {dress.corset_back ? "Yes" : "No"}
-                </p>
+                <p><strong>Silhouette:</strong> {dress.silhouette}</p>
+                <p><strong>Ships in 48hrs:</strong> {dress.shipin48hrs ? "Yes" : "No"}</p>
+                <p><strong>Neckline:</strong> {dress.neckline}</p>
+                <p><strong>Sleeves:</strong> {dress.strapsleevelayout}</p>
+                <p><strong>Length:</strong> {dress.length}</p>
+                <p><strong>Collection:</strong> {dress.collection}</p>
+                <p><strong>Fabric:</strong> {dress.fabric}</p>
+                <p><strong>Color:</strong> {dress.color}</p>
+                <p><strong>Back Style:</strong> {dress.backstyle}</p>
+                <p><strong>Price:</strong> ${dress.price}</p>
+                <p><strong>Size Range:</strong> {dress.size_range}</p>
+                <p><strong>Season:</strong> {dress.season}</p>
+                <p><strong>Pockets:</strong> {dress.has_pockets ? "Yes" : "No"}</p>
+                <p><strong>Corset Back:</strong> {dress.corset_back ? "Yes" : "No"}</p>
+                <p><strong>Priority Score:</strong> {dress.score}</p>
               </div>
 
               {/* Tags, Venue, Embellishments, Features */}
@@ -99,10 +109,7 @@ const DressList = ({ dresses }: Props) => {
                     <strong>Tags:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {dress.tags.map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs"
-                        >
+                        <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {tag}
                         </span>
                       ))}
@@ -115,10 +122,7 @@ const DressList = ({ dresses }: Props) => {
                     <strong>Venue:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {dress.weddingvenue.map((venue, idx) => (
-                        <span
-                          key={idx}
-                          className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs"
-                        >
+                        <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {venue}
                         </span>
                       ))}
@@ -131,10 +135,7 @@ const DressList = ({ dresses }: Props) => {
                     <strong>Embellishments:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {dress.embellishments.map((emb, idx) => (
-                        <span
-                          key={idx}
-                          className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs"
-                        >
+                        <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {emb}
                         </span>
                       ))}
@@ -147,10 +148,7 @@ const DressList = ({ dresses }: Props) => {
                     <strong>Features:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {dress.features.map((feat, idx) => (
-                        <span
-                          key={idx}
-                          className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs"
-                        >
+                        <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {feat}
                         </span>
                       ))}
