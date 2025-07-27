@@ -92,7 +92,6 @@ def get_dresses():
         values = request.args.getlist(key)
         if values:
             query = query.filter(column.in_(values))
-
     # Boolean filters (as strings like "true")
     if request.args.get("shipin48hrs") == "true":
         query = query.filter(WeddingDress.shipin48hrs.is_(True))

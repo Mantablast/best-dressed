@@ -1,15 +1,14 @@
+// SortableItem.tsx
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react'; // optional drag icon
 
-export function SortableItem({
-  id,
-  children,
-}: {
+type Props = {
   id: string;
-  children: React.ReactNode;
-}) {
+  children: (dragHandleProps: React.HTMLAttributes<HTMLSpanElement>) => React.ReactNode;
+};
+
+export function SortableItem({ id, children }: Props) {
   const {
     attributes,
     listeners,
@@ -23,13 +22,15 @@ export function SortableItem({
     transition,
   };
 
+  // Only pass drag-related props to an element (like the grip icon)
+  const dragHandleProps = {
+    ...attributes,
+    ...listeners,
+  };
+
   return (
-    <div ref={setNodeRef} style={style} className="mb-2 border border-mauve-200 rounded-lg">
-      <div className="flex items-center px-2 py-1 cursor-grab" {...attributes} {...listeners}>
-        <GripVertical className="text-mauve-500 mr-2" />
-        <span className="text-sm text-mauve-600">{id}</span>
-      </div>
-      <div className="px-4 pb-4 pt-1">{children}</div>
+    <div ref={setNodeRef} style={style}>
+      {children(dragHandleProps)}
     </div>
   );
 }
