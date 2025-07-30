@@ -33,7 +33,7 @@ const DressList = ({ dresses, priorityScores }: Props) => {
   if (dresses.length === 0)
     return <p className="text-gray-500">No dresses found.</p>;
 
-  // Calculate total importance score per dress
+  // Calculate and attach total importance score per dress
   const scoredDresses = dresses.map((dress) => {
     let score = 0;
 
@@ -46,7 +46,7 @@ const DressList = ({ dresses, priorityScores }: Props) => {
       } else if (typeof value === 'boolean' && value === true) {
         const match = `${key}:true`;
         if (priorityScores[match]) score += priorityScores[match];
-      } else {
+      } else if (typeof value === 'string' && value) {
         const match = `${key}:${value}`;
         if (priorityScores[match]) score += priorityScores[match];
       }
@@ -70,11 +70,14 @@ const DressList = ({ dresses, priorityScores }: Props) => {
     return { ...dress, score };
   });
 
+  // Sort by highest priority score first
+  const sortedDresses = scoredDresses.sort((a, b) => b.score - a.score);
+
   return (
     <div className="flex-1">
       <h2 className="text-2xl font-bold mb-4">Results</h2>
       <div className="grid gap-6">
-        {scoredDresses.map((dress) => (
+        {sortedDresses.map((dress) => (
           <div
             key={dress.id}
             className="flex bg-mauve-50 border border-mauve-200 rounded-2xl shadow p-6 transition hover:shadow-md"
@@ -104,7 +107,7 @@ const DressList = ({ dresses, priorityScores }: Props) => {
 
               {/* Tags, Venue, Embellishments, Features */}
               <div className="mt-4 space-y-2">
-                {dress.tags && dress.tags.length > 0 && (
+                {dress.tags?.length > 0 && (
                   <div>
                     <strong>Tags:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
@@ -117,7 +120,7 @@ const DressList = ({ dresses, priorityScores }: Props) => {
                   </div>
                 )}
 
-                {dress.weddingvenue && dress.weddingvenue.length > 0 && (
+                {dress.weddingvenue?.length > 0 && (
                   <div>
                     <strong>Venue:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
@@ -130,7 +133,7 @@ const DressList = ({ dresses, priorityScores }: Props) => {
                   </div>
                 )}
 
-                {dress.embellishments && dress.embellishments.length > 0 && (
+                {dress.embellishments?.length > 0 && (
                   <div>
                     <strong>Embellishments:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
@@ -143,7 +146,7 @@ const DressList = ({ dresses, priorityScores }: Props) => {
                   </div>
                 )}
 
-                {dress.features && dress.features.length > 0 && (
+                {dress.features?.length > 0 && (
                   <div>
                     <strong>Features:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">

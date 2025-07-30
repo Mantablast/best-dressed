@@ -1,20 +1,25 @@
-// SortableItem.tsx
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-type Props = {
+type SortableItemProps = {
   id: string;
-  children: (dragHandleProps: React.HTMLAttributes<HTMLSpanElement>) => React.ReactNode;
+  children: (props: {
+    handleProps: {
+      ref: (el: HTMLElement | null) => void;
+      listeners: any;
+    };
+  }) => React.ReactNode;
 };
 
-export function SortableItem({ id, children }: Props) {
+export default function SortableItem({ id, children }: SortableItemProps) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
+    setActivatorNodeRef,
   } = useSortable({ id });
 
   const style = {
@@ -22,15 +27,14 @@ export function SortableItem({ id, children }: Props) {
     transition,
   };
 
-  // Only pass drag-related props to an element (like the grip icon)
-  const dragHandleProps = {
-    ...attributes,
-    ...listeners,
-  };
-
   return (
-    <div ref={setNodeRef} style={style}>
-      {children(dragHandleProps)}
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {children({
+        handleProps: {
+          ref: setActivatorNodeRef,
+          listeners,
+        },
+      })}
     </div>
   );
 }
