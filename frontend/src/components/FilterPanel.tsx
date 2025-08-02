@@ -72,7 +72,6 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
           newValues = [value];
         }
 
-        // Update selectedOrder *after* filters change
         setSelectedOrder(prevOrder => {
           const currOrder = prevOrder[field] || [];
           return {
@@ -120,6 +119,7 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
 
   return (
     <div className="w-72 bg-white border border-mauve-200 rounded-2xl shadow p-6 h-fit sticky top-8 overflow-y-auto max-h-screen">
+        <h3 className="text-xs font-bold mb-4">Drag the sections and checked items around to identify what dress features are most important.  (Most important items and sections go to the top.)</h3>
       <h2 className="text-xl font-bold mb-4">Filters</h2>
 
       <DndContext
@@ -155,6 +155,9 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
           {sectionOrder.map((section) => {
             const fieldKey = section.toLowerCase();
             const selectedItems = selectedOrder[fieldKey] || [];
+
+            // Determine items to render (regular sections vs Price)
+            const items = section === "Price" ? priceRanges : sections[section];
 
             return (
               <SortableItem key={section} id={section}>
@@ -213,7 +216,7 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
                         </SortableContext>
 
                         {/* Unselected items */}
-                        {sections[section]
+                        {items
                           ?.filter(item => !selectedItems.includes(item))
                           .map(item => (
                             <label

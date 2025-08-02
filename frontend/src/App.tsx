@@ -99,6 +99,16 @@ console.log("Query string:", searchParams.toString());
   }, [filters]);
 
   return (
+      <div>
+      <div style={{ textAlign: "center", marginBottom: "20px" }}>
+  <h3 className="font-bold mb-4">Best Dressed - Priority Search Concept</h3>
+  <p style={{ maxWidth: "800px", margin: "0 auto" }}>
+    A search filter proof of concept that allows users to choose and sort filter
+    items by priority to have the closest priority match displayed to them with
+    a real-time priority score. It aids the user with their decision making, making a basic
+    filter search a much more customized experience.
+  </p>
+</div>
     <div className="min-h-screen bg-mauve-50 p-8 flex gap-8">
       <FilterPanel
   filters={filters}
@@ -106,6 +116,7 @@ console.log("Query string:", searchParams.toString());
   setPriorityScores={setPriorityScores}
 />
       <DressList dresses={dresses} priorityScores={priorityScores} />
+    </div>
 
     </div>
   );
