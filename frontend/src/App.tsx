@@ -117,7 +117,10 @@ console.log("Query string:", searchParams.toString());
 />
       <DressList dresses={dresses} priorityScores={priorityScores} />
     </div>
+    <div className="text-center mt-8">
+<h3 className="font-bold mb-4 center">Made with love, sweat, frustration, bugs and many snacks. 🍅 <a href="https://github.com/Mantablast" target="_blank" rel="noopener noreferrer">-Aimee J</a></h3>
 
+</div>
     </div>
   );
 }
