@@ -1,8 +1,8 @@
 # 👰‍♀️ Best Dressed
 
-A full-stack filtering demo... that just so happens to be about wedding dresses.  
-Built for fun. Stayed for the filters. 💅
-
+A tiny stack filtering demo... that just so happens to be about wedding dresses.  
+Built for fun. Stayed for the filters. Not a topic I know anything about so why not learn? 💅
+The user may have to seed the database before use!  python seed.py!
 ---
 
 ## ✨ What It Is
