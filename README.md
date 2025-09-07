@@ -43,4 +43,8 @@ cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+# (Optional) Seed the database if needed
+python seed.py
+# Start the backend server
 python app.py
+```

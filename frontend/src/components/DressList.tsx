@@ -102,7 +102,7 @@ const DressList = ({ dresses, priorityScores }: Props) => {
                 <p><strong>Season:</strong> {dress.season}</p>
                 <p><strong>Pockets:</strong> {dress.has_pockets ? "Yes" : "No"}</p>
                 <p><strong>Corset Back:</strong> {dress.corset_back ? "Yes" : "No"}</p>
-                <p><strong>Priority Score:</strong> {dress.score}</p>
+                  {/* Priority Score moved above photo */}
               </div>
 
               {/* Tags, Venue, Embellishments, Features */}
@@ -162,7 +162,10 @@ const DressList = ({ dresses, priorityScores }: Props) => {
             </div>
 
             {/* Right: Image */}
-            <div className="w-1/3 flex justify-center items-center">
+            <div className="w-1/3 flex flex-col items-center justify-center">
+              <div className="mb-2 text-mauve-900 text-lg font-bold">
+                Priority Score: {dress.score}
+              </div>
               <img
                 src={`http://localhost:5050/static/images/${dress.image_path}`}
                 alt={dress.name}

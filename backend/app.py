@@ -74,7 +74,9 @@ def match_any(field_value, filter_values):
 # API route with filters
 @app.route("/api/dresses")
 def get_dresses():
-    query = db.session.query(WeddingDress)
+
+    # Collect all OR conditions for all filters
+    or_conditions = []
 
     # Standard string filters
     multi_filters = {
@@ -87,18 +89,18 @@ def get_dresses():
         "collection": WeddingDress.collection,
         "season": WeddingDress.season,
     }
-
     for key, column in multi_filters.items():
         values = request.args.getlist(key)
         if values:
-            query = query.filter(column.in_(values))
+            or_conditions.extend([column.in_([val]) for val in values])
+
     # Boolean filters (as strings like "true")
     if request.args.get("shipin48hrs") == "true":
-        query = query.filter(WeddingDress.shipin48hrs.is_(True))
+        or_conditions.append(WeddingDress.shipin48hrs.is_(True))
     if request.args.get("has_pockets") == "true":
-        query = query.filter(WeddingDress.has_pockets.is_(True))
+        or_conditions.append(WeddingDress.has_pockets.is_(True))
     if request.args.get("corset_back") == "true":
-        query = query.filter(WeddingDress.corset_back.is_(True))
+        or_conditions.append(WeddingDress.corset_back.is_(True))
 
     # Tags, Embellishments, Features (stored as PickleType → list)
     list_fields = {
@@ -106,22 +108,18 @@ def get_dresses():
         "embellishments": WeddingDress.embellishments,
         "features": WeddingDress.features,
     }
-
     for key, column in list_fields.items():
         values = request.args.getlist(key)
         if values:
-            for val in values:
-                query = query.filter(column.contains([val]))
+            or_conditions.extend([column.contains([val]) for val in values])
 
     # Price ranges
     price_ranges = request.args.getlist("price")
-    price_conditions = []
-
     for range_str in price_ranges:
         if "+" in range_str:
             try:
                 min_price = int(range_str.replace("+", ""))
-                price_conditions.append(WeddingDress.price >= min_price)
+                or_conditions.append(WeddingDress.price >= min_price)
             except ValueError:
                 pass
         else:
@@ -129,14 +127,16 @@ def get_dresses():
                 min_str, max_str = range_str.split("-")
                 min_price = int(min_str)
                 max_price = int(max_str)
-                price_conditions.append(WeddingDress.price.between(min_price, max_price))
+                or_conditions.append(WeddingDress.price.between(min_price, max_price))
             except ValueError:
                 pass
 
-    if price_conditions:
-        query = query.filter(or_(*price_conditions))
+    # If no filters, return all dresses
+    if not or_conditions:
+        results = db.session.query(WeddingDress).all()
+    else:
+        results = db.session.query(WeddingDress).filter(or_(*or_conditions)).all()
 
-    results = query.all()
     serialized = [dress.serialize() for dress in results]
     print("Received color filters:", request.args.getlist("color"))
     return jsonify(serialized)
