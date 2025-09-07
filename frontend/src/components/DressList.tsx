@@ -36,18 +36,18 @@ const DressList = ({ dresses, priorityScores }: Props) => {
   // Calculate and attach total importance score per dress
   const scoredDresses = dresses.map((dress) => {
     let score = 0;
-
+    const norm = (v: unknown) => typeof v === 'string' ? v.trim().toLowerCase() : String(v);
     const accumulateScore = (key: string, value: string | string[] | boolean) => {
       if (Array.isArray(value)) {
         value.forEach((v) => {
-          const match = `${key}:${v}`;
+          const match = `${key}:${norm(v)}`;
           if (priorityScores[match]) score += priorityScores[match];
         });
       } else if (typeof value === 'boolean' && value === true) {
-        const match = `${key}:true`;
+        const match = `${key}:${norm(true)}`;
         if (priorityScores[match]) score += priorityScores[match];
       } else if (typeof value === 'string' && value) {
-        const match = `${key}:${value}`;
+        const match = `${key}:${norm(value)}`;
         if (priorityScores[match]) score += priorityScores[match];
       }
     };
@@ -102,7 +102,6 @@ const DressList = ({ dresses, priorityScores }: Props) => {
                 <p><strong>Season:</strong> {dress.season}</p>
                 <p><strong>Pockets:</strong> {dress.has_pockets ? "Yes" : "No"}</p>
                 <p><strong>Corset Back:</strong> {dress.corset_back ? "Yes" : "No"}</p>
-                  {/* Priority Score moved above photo */}
               </div>
 
               {/* Tags, Venue, Embellishments, Features */}

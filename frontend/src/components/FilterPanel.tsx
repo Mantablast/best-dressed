@@ -48,6 +48,7 @@ const defaultSectionOrder = [
 ];
 
 const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
+  const norm = (v: string) => v?.trim().toLowerCase();
   const [sectionOrder, setSectionOrder] = useState(defaultSectionOrder);
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({});
   const [selectedOrder, setSelectedOrder] = useState<{ [key: string]: string[] }>({});
@@ -98,7 +99,7 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
 
       selectedItems.forEach((item, itemIndex) => {
         const itemWeight = sectionWeight - itemIndex;
-        scores[`${fieldKey}:${item}`] = itemWeight;
+        scores[`${fieldKey}:${norm(item)}`] = itemWeight;
       });
     });
 
