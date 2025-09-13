@@ -123,6 +123,8 @@ export default function App() {
           items by priority to have the closest priority match displayed to them with
           a real-time priority score. It aids the user with their decision making, making a basic
           filter search a much more customized experience.
+          Update Sep 13, 2025:  I have just recently learned that this concept is called
+          lexicographic ordering. 
         </p>
       </div>
 
