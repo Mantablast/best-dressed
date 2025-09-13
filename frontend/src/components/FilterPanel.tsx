@@ -1,4 +1,4 @@
-import React, { useState, useEffect, startTransition } from 'react';
+import React, { useState, useEffect, useMemo, useRef, startTransition } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -27,37 +27,43 @@ type Props = {
   setPriorityScores: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 };
 
-const sections = {
-  Color: ['Ivory', 'Pink', 'White', 'Black', 'Blush', 'Champagne'],
+const sections: Record<string, string[]> = {
+  Color: ['Ivory', 'White', 'Black', 'Blush', 'Champagne'],
   Silhouette: ['A-line', 'Ballgown', 'Sheath', 'Mermaid', 'Fit-and-Flare'],
-  Neckline: ['Sweetheart', 'Off-the-Shoulder', 'V-neck', 'High Neck', 'Halter'],
+  Neckline: ['Sweetheart', 'Off-the-Shoulder', 'V-neck', 'High Neck', 'Halter', 'Straight Across'],
   Length: ['Knee Length', 'Floor Length', 'Ankle Length', 'Chapel Train', 'Sweep Train', 'Cathedral Train'],
   Fabric: ['Lace', 'Tulle', 'Satin', 'Chiffon', 'Organza'],
-  Backstyle: ['Corset Back', 'Zipper', 'Zipper + Buttons', 'Keyhole Back', 'Illusion Back', 'Lace-Up', 'Low Back'],
+  Backstyle: ['Corset Back', 'Zip-up', 'Zipper + Buttons', 'Keyhole Back', 'Illusion Back', 'Lace-Up', 'Low Back'],
   Tags: ['elegant', 'vintage', 'lace', 'dramatic', 'princess', 'twilight', 'minimal', 'modern', 'sleek'],
-  Embellishments: ['beading', 'embroidery', 'sequins', 'none', 'floral appliqué', 'glitter tulle', 'crystals'],
-  Features: ['pockets', 'convertible', 'Stay-in-place straps', 'built-in bra', 'removable train'],
+  Embellishments: ['beading', 'embroidery', 'sequins', 'none', 'floral appliqué', 'glitter tulle', 'crystals', 'pearls'],
+  Features: ['pockets', 'convertible', 'Stay-in-place straps', 'built-in bra', 'removable train', 'easy bustle'],
   Collection: ['Golden Hour', 'Midnight Bloom', 'Modern Muse', 'Botanical Romance', 'Moonlight Collection', 'Rose Reverie'],
   Season: ['spring', 'summer', 'fall', 'winter'],
 };
 
 const defaultSectionOrder = [
-  "Color", "Silhouette", "Neckline", "Length", "Fabric",
-  "Backstyle", "Tags", "Embellishments", "Features",
-  "Collection", "Season", "Price"
+  'Color', 'Silhouette', 'Neckline', 'Length', 'Fabric',
+  'Backstyle', 'Tags', 'Embellishments', 'Features',
+  'Collection', 'Season', 'Price',
 ];
 
 const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
   const norm = (v: string) => v?.trim().toLowerCase();
+
   const [sectionOrder, setSectionOrder] = useState(defaultSectionOrder);
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({});
   const [selectedOrder, setSelectedOrder] = useState<{ [key: string]: string[] }>({});
 
+  // Highlight a section title when it has ≥1 selection
+  const hasAnySelection = (key: string) => {
+    const v = (filters as any)[key];
+    if (Array.isArray(v)) return v.length > 0;
+    if (typeof v === 'string') return v.trim().length > 0;
+    return false;
+  };
+
   const toggleSection = (section: string) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
   const handleMultiCheckbox = (field: string, value: string) => {
@@ -77,9 +83,9 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
           const currOrder = prevOrder[field] || [];
           return {
             ...prevOrder,
-            [field]: newValues.filter(v => currOrder.includes(v)).concat(
-              newValues.filter(v => !currOrder.includes(v))
-            )
+            [field]:
+              newValues.filter(v => currOrder.includes(v))
+                .concat(newValues.filter(v => !currOrder.includes(v))),
           };
         });
 
@@ -88,6 +94,7 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
     });
   };
 
+  // Build scores from section + item ordering
   const calculatePriorityScores = () => {
     const scores: { [key: string]: number } = {};
     const baseSectionWeight = 100;
@@ -106,21 +113,28 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
     return scores;
   };
 
+  // Memoize scores; notify parent in an effect (prevents setState-during-render warning)
+  const memoScores = useMemo(() => calculatePriorityScores(), [sectionOrder, selectedOrder]);
+  const lastSentRef = useRef<string>('');
   useEffect(() => {
-    const scores = calculatePriorityScores();
-    startTransition(() => {
-      setPriorityScores(scores);
-    });
-  }, [filters, sectionOrder, selectedOrder]);
+    const snapshot = JSON.stringify(memoScores);
+    if (snapshot !== lastSentRef.current) {
+      lastSentRef.current = snapshot;
+      startTransition(() => setPriorityScores(memoScores));
+    }
+  }, [memoScores, setPriorityScores]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   return (
     <div className="w-72 bg-white border border-mauve-200 rounded-2xl shadow p-6 h-fit sticky top-8 overflow-y-auto max-h-screen">
-        <h3 className="text-xs font-bold mb-4">Drag the sections and checked items around to identify what dress features are most important.  (Most important items and sections go to the top.)</h3>
+      <h3 className="text-xs font-bold mb-4">
+        Drag the sections and checked items around to identify what dress features are most important.
+        (Most important items and sections go to the top.)
+      </h3>
       <h2 className="text-xl font-bold mb-4">Filters</h2>
 
       <DndContext
@@ -132,7 +146,7 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
           // Section reorder
           if (sectionOrder.includes(active.id as string)) {
             if (active.id !== over.id) {
-              setSectionOrder((items) => {
+              setSectionOrder(items => {
                 const oldIndex = items.indexOf(active.id as string);
                 const newIndex = items.indexOf(over.id as string);
                 return arrayMove(items, oldIndex, newIndex);
@@ -148,17 +162,17 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
           const newIndex = newOrder.indexOf((over.id as string).split(':')[1]);
           setSelectedOrder(prev => ({
             ...prev,
-            [sectionKey]: arrayMove(newOrder, oldIndex, newIndex)
+            [sectionKey]: arrayMove(newOrder, oldIndex, newIndex),
           }));
         }}
       >
         <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-          {sectionOrder.map((section) => {
+          {sectionOrder.map(section => {
             const fieldKey = section.toLowerCase();
             const selectedItems = selectedOrder[fieldKey] || [];
+            const selectedInSection = hasAnySelection(fieldKey);
 
-            // Determine items to render (regular sections vs Price)
-            const items = section === "Price" ? priceRanges : sections[section];
+            const items = section === 'Price' ? priceRanges : sections[section];
 
             return (
               <SortableItem key={section} id={section}>
@@ -177,7 +191,10 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
 
                       {/* Section toggle button */}
                       <button
-                        className="text-left font-semibold text-mauve-800 hover:text-mauve-600 transition flex-1"
+                        className={`text-left font-semibold transition flex-1 rounded
+                          ${selectedInSection
+                            ? 'text-mauve-900 bg-mauve-50 border-l-4 border-mauve-500 pl-2'
+                            : 'text-mauve-800 hover:text-mauve-600'}`}
                         onClick={() => toggleSection(section)}
                       >
                         {section} {openSections[section] ? '▲' : '▼'}
@@ -205,7 +222,11 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
                                   </span>
                                   <input
                                     type="checkbox"
-                                    checked={filters[fieldKey]?.includes(item)}
+                                    checked={
+                                      Array.isArray((filters as any)[fieldKey])
+                                        ? ((filters as any)[fieldKey] as string[]).includes(item)
+                                        : false
+                                    }
                                     onChange={() => handleMultiCheckbox(fieldKey, item)}
                                     className="mr-2"
                                   />
@@ -220,13 +241,14 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
                         {items
                           ?.filter(item => !selectedItems.includes(item))
                           .map(item => (
-                            <label
-                              key={item}
-                              className="flex items-center mb-1 text-sm text-mauve-600"
-                            >
+                            <label key={item} className="flex items-center mb-1 text-sm text-mauve-600">
                               <input
                                 type="checkbox"
-                                checked={filters[fieldKey]?.includes(item)}
+                                checked={
+                                  Array.isArray((filters as any)[fieldKey])
+                                    ? ((filters as any)[fieldKey] as string[]).includes(item)
+                                    : false
+                                }
                                 onChange={() => handleMultiCheckbox(fieldKey, item)}
                                 className="mr-2"
                               />

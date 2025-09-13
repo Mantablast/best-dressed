@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 type Dress = {
   id: number;
@@ -33,45 +33,82 @@ const DressList = ({ dresses, priorityScores }: Props) => {
   if (dresses.length === 0)
     return <p className="text-gray-500">No dresses found.</p>;
 
-  // Calculate and attach total importance score per dress
-  const scoredDresses = dresses.map((dress) => {
-    let score = 0;
-    const norm = (v: unknown) => typeof v === 'string' ? v.trim().toLowerCase() : String(v);
-    const accumulateScore = (key: string, value: string | string[] | boolean) => {
-      if (Array.isArray(value)) {
-        value.forEach((v) => {
-          const match = `${key}:${norm(v)}`;
-          if (priorityScores[match]) score += priorityScores[match];
-        });
-      } else if (typeof value === 'boolean' && value === true) {
-        const match = `${key}:${norm(true)}`;
-        if (priorityScores[match]) score += priorityScores[match];
-      } else if (typeof value === 'string' && value) {
-        const match = `${key}:${norm(value)}`;
-        if (priorityScores[match]) score += priorityScores[match];
-      }
-    };
+  // Helpers
+  const norm = (v: unknown) =>
+    typeof v === 'string' ? v.trim().toLowerCase() : String(v);
 
-    accumulateScore('color', dress.color);
-    accumulateScore('silhouette', dress.silhouette);
-    accumulateScore('neckline', dress.neckline);
-    accumulateScore('length', dress.length);
-    accumulateScore('fabric', dress.fabric);
-    accumulateScore('backstyle', dress.backstyle);
-    accumulateScore('collection', dress.collection);
-    accumulateScore('season', dress.season);
-    accumulateScore('tags', dress.tags);
-    accumulateScore('embellishments', dress.embellishments);
-    accumulateScore('features', dress.features);
-    accumulateScore('has_pockets', dress.has_pockets);
-    accumulateScore('corset_back', dress.corset_back);
-    accumulateScore('shipin48hrs', dress.shipin48hrs);
+  const priceBucket = (p: number) =>
+    p < 500 ? '0-500'
+      : p < 1000 ? '500-1000'
+      : p < 1500 ? '1000-1500'
+      : p < 2000 ? '1500-2000'
+      : '2000+';
 
-    return { ...dress, score };
+  const fmtCurrency = new Intl.NumberFormat('en-CA', {
+    style: 'currency',
+    currency: 'CAD',
+    maximumFractionDigits: 0
   });
 
-  // Sort by highest priority score first
-  const sortedDresses = scoredDresses.sort((a, b) => b.score - a.score);
+  const IMG_BASE =
+    (import.meta as any)?.env?.VITE_IMG_BASE_URL ?? 'http://localhost:5050';
+
+  // Calculate scores and sort (memoized)
+  const sortedDresses = useMemo(() => {
+    const scored = dresses.map((dress) => {
+      let score = 0;
+
+      const accumulateScore = (key: string, value: string | string[] | boolean) => {
+        if (Array.isArray(value)) {
+          value.forEach((v) => {
+            const match = `${key}:${norm(v)}`;
+            if (priorityScores[match]) score += priorityScores[match];
+          });
+        } else if (typeof value === 'boolean') {
+          if (value === true) {
+            const match = `${key}:${norm(true)}`;
+            if (priorityScores[match]) score += priorityScores[match];
+          }
+        } else if (typeof value === 'string' && value) {
+          const match = `${key}:${norm(value)}`;
+          if (priorityScores[match]) score += priorityScores[match];
+        }
+      };
+
+      // Strings
+      accumulateScore('color', dress.color);
+      accumulateScore('silhouette', dress.silhouette);
+      accumulateScore('neckline', dress.neckline);
+      accumulateScore('length', dress.length);
+      accumulateScore('fabric', dress.fabric);
+      accumulateScore('backstyle', dress.backstyle);
+      accumulateScore('collection', dress.collection);
+      accumulateScore('season', dress.season);
+
+      // Arrays
+      accumulateScore('tags', dress.tags);
+      accumulateScore('embellishments', dress.embellishments);
+      accumulateScore('features', dress.features);
+      accumulateScore('weddingvenue', dress.weddingvenue);
+
+      // Booleans
+      accumulateScore('has_pockets', dress.has_pockets);
+      accumulateScore('corset_back', dress.corset_back);
+      accumulateScore('shipin48hrs', dress.shipin48hrs);
+
+      // Price bucket (to align with FilterPanel "Price" ranges)
+      accumulateScore('price', priceBucket(dress.price));
+
+      return { ...dress, score };
+    });
+
+    // Sort by score DESC, then price ASC, then name ASC
+    return scored.sort((a, b) =>
+      (b.score - a.score) ||
+      (a.price - b.price) ||
+      a.name.localeCompare(b.name)
+    );
+  }, [dresses, priorityScores]);
 
   return (
     <div className="flex-1">
@@ -97,7 +134,7 @@ const DressList = ({ dresses, priorityScores }: Props) => {
                 <p><strong>Fabric:</strong> {dress.fabric}</p>
                 <p><strong>Color:</strong> {dress.color}</p>
                 <p><strong>Back Style:</strong> {dress.backstyle}</p>
-                <p><strong>Price:</strong> ${dress.price}</p>
+                <p><strong>Price:</strong> {fmtCurrency.format(dress.price)}</p>
                 <p><strong>Size Range:</strong> {dress.size_range}</p>
                 <p><strong>Season:</strong> {dress.season}</p>
                 <p><strong>Pockets:</strong> {dress.has_pockets ? "Yes" : "No"}</p>
@@ -166,7 +203,7 @@ const DressList = ({ dresses, priorityScores }: Props) => {
                 Priority Score: {dress.score}
               </div>
               <img
-                src={`http://localhost:5050/static/images/${dress.image_path}`}
+                src={`${IMG_BASE}/static/images/${dress.image_path}`}
                 alt={dress.name}
                 className="max-h-80 object-contain rounded-xl bg-white"
               />
