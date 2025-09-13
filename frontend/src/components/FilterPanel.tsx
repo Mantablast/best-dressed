@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, startTransition } from 'react';
+import React, { useState, startTransition } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -17,44 +17,45 @@ import SortableItem from './SortableItem';
 
 const priceRanges = ['0-500', '500-1000', '1000-1500', '1500-2000', '2000+'];
 
-type Filters = {
-  [key: string]: string[] | string;
-};
+type Filters = { [key: string]: string[] | string };
 
 type Props = {
   filters: Filters;
   setFilters: React.Dispatch<React.SetStateAction<Filters>>;
-  setPriorityScores: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+
+  // lifted ordering state from App:
+  sectionOrder: string[];
+  setSectionOrder: React.Dispatch<React.SetStateAction<string[]>>;
+  selectedOrder: Record<string, string[]>;
+  setSelectedOrder: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
 };
 
 const sections: Record<string, string[]> = {
-  Color: ['Ivory', 'White', 'Black', 'Blush', 'Champagne'],
+  Color: ['Ivory', 'Pink', 'White', 'Black', 'Blush', 'Champagne'],
   Silhouette: ['A-line', 'Ballgown', 'Sheath', 'Mermaid', 'Fit-and-Flare'],
-  Neckline: ['Sweetheart', 'Off-the-Shoulder', 'V-neck', 'High Neck', 'Halter', 'Straight Across'],
+  Neckline: ['Sweetheart', 'Off-the-Shoulder', 'V-neck', 'High Neck', 'Halter','Straight Across'],
   Length: ['Knee Length', 'Floor Length', 'Ankle Length', 'Chapel Train', 'Sweep Train', 'Cathedral Train'],
   Fabric: ['Lace', 'Tulle', 'Satin', 'Chiffon', 'Organza'],
   Backstyle: ['Corset Back', 'Zip-up', 'Zipper + Buttons', 'Keyhole Back', 'Illusion Back', 'Lace-Up', 'Low Back'],
   Tags: ['elegant', 'vintage', 'lace', 'dramatic', 'princess', 'twilight', 'minimal', 'modern', 'sleek'],
-  Embellishments: ['beading', 'embroidery', 'sequins', 'none', 'floral appliqué', 'glitter tulle', 'crystals', 'pearls'],
+  Embellishments: ['beading', 'embroidery', 'sequins', 'none', 'floral appliqué', 'glitter tulle', 'crystals','pearls'],
   Features: ['pockets', 'convertible', 'Stay-in-place straps', 'built-in bra', 'removable train', 'easy bustle'],
   Collection: ['Golden Hour', 'Midnight Bloom', 'Modern Muse', 'Botanical Romance', 'Moonlight Collection', 'Rose Reverie'],
   Season: ['spring', 'summer', 'fall', 'winter'],
 };
 
-const defaultSectionOrder = [
-  'Color', 'Silhouette', 'Neckline', 'Length', 'Fabric',
-  'Backstyle', 'Tags', 'Embellishments', 'Features',
-  'Collection', 'Season', 'Price',
-];
-
-const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
-  const norm = (v: string) => v?.trim().toLowerCase();
-
-  const [sectionOrder, setSectionOrder] = useState(defaultSectionOrder);
+const FilterPanel = ({
+  filters, setFilters,
+  sectionOrder, setSectionOrder,
+  selectedOrder, setSelectedOrder
+}: Props) => {
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({});
-  const [selectedOrder, setSelectedOrder] = useState<{ [key: string]: string[] }>({});
 
-  // Highlight a section title when it has ≥1 selection
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  // UI-only highlight when a section has ≥1 selection
   const hasAnySelection = (key: string) => {
     const v = (filters as any)[key];
     if (Array.isArray(v)) return v.length > 0;
@@ -62,15 +63,12 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
     return false;
   };
 
-  const toggleSection = (section: string) => {
-    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
-
   const handleMultiCheckbox = (field: string, value: string) => {
     startTransition(() => {
       setFilters(prev => {
         const current = prev[field] || [];
         let newValues: string[];
+
         if (Array.isArray(current)) {
           newValues = current.includes(value)
             ? current.filter(v => v !== value)
@@ -94,39 +92,9 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
     });
   };
 
-  // Build scores from section + item ordering
-  const calculatePriorityScores = () => {
-    const scores: { [key: string]: number } = {};
-    const baseSectionWeight = 100;
-
-    sectionOrder.forEach((section, sectionIndex) => {
-      const sectionWeight = baseSectionWeight - sectionIndex * 10;
-      const fieldKey = section.toLowerCase();
-      const selectedItems = selectedOrder[fieldKey] || [];
-
-      selectedItems.forEach((item, itemIndex) => {
-        const itemWeight = sectionWeight - itemIndex;
-        scores[`${fieldKey}:${norm(item)}`] = itemWeight;
-      });
-    });
-
-    return scores;
-  };
-
-  // Memoize scores; notify parent in an effect (prevents setState-during-render warning)
-  const memoScores = useMemo(() => calculatePriorityScores(), [sectionOrder, selectedOrder]);
-  const lastSentRef = useRef<string>('');
-  useEffect(() => {
-    const snapshot = JSON.stringify(memoScores);
-    if (snapshot !== lastSentRef.current) {
-      lastSentRef.current = snapshot;
-      startTransition(() => setPriorityScores(memoScores));
-    }
-  }, [memoScores, setPriorityScores]);
-
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   return (
@@ -167,11 +135,10 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
         }}
       >
         <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-          {sectionOrder.map(section => {
+          {sectionOrder.map((section) => {
             const fieldKey = section.toLowerCase();
             const selectedItems = selectedOrder[fieldKey] || [];
             const selectedInSection = hasAnySelection(fieldKey);
-
             const items = section === 'Price' ? priceRanges : sections[section];
 
             return (
@@ -179,7 +146,6 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
                 {({ handleProps }) => (
                   <div className="mb-4 border-b border-mauve-200 pb-2">
                     <div className="flex items-center cursor-pointer">
-                      {/* Drag handle on the left */}
                       <span
                         {...handleProps.listeners}
                         ref={handleProps.ref}
@@ -189,7 +155,6 @@ const FilterPanel = ({ filters, setFilters, setPriorityScores }: Props) => {
                         ☰
                       </span>
 
-                      {/* Section toggle button */}
                       <button
                         className={`text-left font-semibold transition flex-1 rounded
                           ${selectedInSection

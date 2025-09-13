@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, startTransition } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef, startTransition } from 'react';
 import axios from 'axios';
 import FilterPanel from './components/FilterPanel';
 import DressList from './components/DressList';
@@ -45,6 +45,13 @@ type Filters = {
   price: string[];
 };
 
+// --- Lifted ordering state lives here ---
+const DEFAULT_SECTION_ORDER = [
+  'Color', 'Silhouette', 'Neckline', 'Length', 'Fabric',
+  'Backstyle', 'Tags', 'Embellishments', 'Features',
+  'Collection', 'Season', 'Price',
+];
+
 export default function App() {
   const [dresses, setDresses] = useState<Dress[]>([]);
   const [filters, setFilters] = useState<Filters>({
@@ -64,31 +71,40 @@ export default function App() {
     corset_back: "",
     price: [],
   });
-  const [priorityScores, setPriorityScores] = useState<Record<string, number>>({});
 
-  // Give children a deferred, stable setter so updates never happen during App's render.
-  const setPriorityScoresDeferred = useCallback((scores: Record<string, number>) => {
-    // schedule after current render tick (satisfies StrictMode double-render too)
-    queueMicrotask(() => {
-      startTransition(() => setPriorityScores(scores));
+  // New: ordering state owned by App (so FilterPanel won't push to parent)
+  const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
+  const [selectedOrder, setSelectedOrder] = useState<Record<string, string[]>>({});
+
+  const norm = (v: string) => v?.trim().toLowerCase();
+
+  // Compute priority scores here, from lifted state
+  const priorityScores = useMemo(() => {
+    const scores: Record<string, number> = {};
+    const baseSectionWeight = 100;
+
+    sectionOrder.forEach((section, sectionIndex) => {
+      const sectionWeight = baseSectionWeight - sectionIndex * 10;
+      const fieldKey = section.toLowerCase();
+      const selectedItems = selectedOrder[fieldKey] || [];
+      selectedItems.forEach((item, itemIndex) => {
+        const itemWeight = sectionWeight - itemIndex;
+        scores[`${fieldKey}:${norm(item)}`] = itemWeight;
+      });
     });
-  }, []);
+
+    return scores;
+  }, [sectionOrder, selectedOrder]);
 
   const fetchDresses = useCallback(() => {
     const searchParams = new URLSearchParams();
-
     Object.entries(filters).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        value.forEach((val) => {
-          if (val) searchParams.append(key, val);
-        });
+        value.forEach((val) => { if (val) searchParams.append(key, val); });
       } else if (value !== '') {
         searchParams.append(key, value);
       }
     });
-
-    console.log("Sending filters:", filters);
-    console.log("Query string:", searchParams.toString());
 
     axios
       .get(`http://127.0.0.1:5050/api/dresses?${searchParams.toString()}`)
@@ -96,9 +112,7 @@ export default function App() {
       .catch((err) => console.error('Error fetching dresses:', err));
   }, [filters]);
 
-  useEffect(() => {
-    fetchDresses();
-  }, [fetchDresses]);
+  useEffect(() => { fetchDresses(); }, [fetchDresses]);
 
   return (
     <div>
@@ -116,7 +130,11 @@ export default function App() {
         <FilterPanel
           filters={filters}
           setFilters={setFilters}
-          setPriorityScores={setPriorityScoresDeferred}
+          // pass ordering state down (no callbacks that set App from child)
+          sectionOrder={sectionOrder}
+          setSectionOrder={setSectionOrder}
+          selectedOrder={selectedOrder}
+          setSelectedOrder={setSelectedOrder}
         />
         <DressList dresses={dresses} priorityScores={priorityScores} />
       </div>
