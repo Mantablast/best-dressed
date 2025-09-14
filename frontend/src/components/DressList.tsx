@@ -14,11 +14,11 @@ type Dress = {
   backstyle: string;
   price: number;
   size_range: string;
-  tags: string[];
-  weddingvenue: string[];
+  tags?: string[];
+  weddingvenue?: string[];
   season: string;
-  embellishments: string[];
-  features: string[];
+  embellishments?: string[];
+  features?: string[];
   has_pockets: boolean;
   corset_back: boolean;
   image_path: string;
@@ -26,11 +26,18 @@ type Dress = {
 
 type Props = {
   dresses: Dress[];
-  priorityScores: { [key: string]: number };
+  priorityScores: Record<string, number>;
+  sectionOrder?: string[];
+  selectedOrder?: Record<string, string[]>;
 };
 
-const DressList = ({ dresses, priorityScores }: Props) => {
-  if (dresses.length === 0)
+const DressList = ({
+  dresses,
+  priorityScores,
+  sectionOrder = [],
+  selectedOrder = {}
+}: Props) => {
+  if (!Array.isArray(dresses) || dresses.length === 0)
     return <p className="text-gray-500">No dresses found.</p>;
 
   // Helpers
@@ -53,63 +60,97 @@ const DressList = ({ dresses, priorityScores }: Props) => {
   const IMG_BASE =
     (import.meta as any)?.env?.VITE_IMG_BASE_URL ?? 'http://localhost:5050';
 
-  // Calculate scores and sort (memoized)
+  // Build normalized key set for a dress
+  const keysForDress = (d: Dress): Set<string> => {
+    const s = new Set<string>();
+    const add = (key: string, val: string | string[] | boolean | undefined) => {
+      if (Array.isArray(val)) {
+        val.forEach(v => s.add(`${key}:${norm(v)}`));
+      } else if (typeof val === 'boolean') {
+        if (val) s.add(`${key}:${norm(true)}`);
+      } else if (typeof val === 'string' && val) {
+        s.add(`${key}:${norm(val)}`);
+      }
+    };
+    add('color', d.color);
+    add('silhouette', d.silhouette);
+    add('neckline', d.neckline);
+    add('length', d.length);
+    add('fabric', d.fabric);
+    add('backstyle', d.backstyle);
+    add('collection', d.collection);
+    add('season', d.season);
+
+    add('tags', d.tags ?? []);
+    add('embellishments', d.embellishments ?? []);
+    add('features', d.features ?? []);
+    add('weddingvenue', d.weddingvenue ?? []);
+
+    add('has_pockets', d.has_pockets);
+    add('corset_back', d.corset_back);
+    add('shipin48hrs', d.shipin48hrs);
+
+    add('price', priceBucket(d.price));
+    return s;
+  };
+
   const sortedDresses = useMemo(() => {
-    const scored = dresses.map((dress) => {
+    const safeSectionOrder = Array.isArray(sectionOrder) ? sectionOrder : [];
+    const safeSelectedOrder: Record<string, string[]> =
+      selectedOrder && typeof selectedOrder === 'object' ? selectedOrder : {};
+  
+  
+    const withMeta = dresses.map(d => {
+      const keyset = keysForDress(d);
+  
+      // Additive score (still useful as micro tiebreaker)
       let score = 0;
+      keyset.forEach(k => {
+        const pts = priorityScores[k];
+        if (pts) score += pts;
+      });
 
-      const accumulateScore = (key: string, value: string | string[] | boolean) => {
-        if (Array.isArray(value)) {
-          value.forEach((v) => {
-            const match = `${key}:${norm(v)}`;
-            if (priorityScores[match]) score += priorityScores[match];
-          });
-        } else if (typeof value === 'boolean') {
-          if (value === true) {
-            const match = `${key}:${norm(true)}`;
-            if (priorityScores[match]) score += priorityScores[match];
-          }
-        } else if (typeof value === 'string' && value) {
-          const match = `${key}:${norm(value)}`;
-          if (priorityScores[match]) score += priorityScores[match];
+      // Lexicographic vector
+      const NO_MATCH = 1e9;
+      const vector = safeSectionOrder.map(section => {
+        const fieldKey = section.toLowerCase();
+        const items = safeSelectedOrder[fieldKey] ?? [];
+        let best = NO_MATCH;
+        for (let j = 0; j < items.length; j++) {
+          const key = `${fieldKey}:${norm(items[j])}`;
+          if (keyset.has(key)) { best = j; break; }
         }
-      };
+        return best;
+      });
 
-      // Strings
-      accumulateScore('color', dress.color);
-      accumulateScore('silhouette', dress.silhouette);
-      accumulateScore('neckline', dress.neckline);
-      accumulateScore('length', dress.length);
-      accumulateScore('fabric', dress.fabric);
-      accumulateScore('backstyle', dress.backstyle);
-      accumulateScore('collection', dress.collection);
-      accumulateScore('season', dress.season);
+      // Dominance-weighted score mirrors lexicographic order
+      const S = safeSectionOrder.length || 1;
+      let dominance = 0;
+      for (let i = 0; i < S; i++) {
+        const j = vector[i];
+        if (j !== NO_MATCH) {
+          const weight = Math.pow(100, (S - i));   // higher section dominates
+          dominance += (100 - j) * weight;         // earlier item within section
+        }
+      }
 
-      // Arrays
-      accumulateScore('tags', dress.tags);
-      accumulateScore('embellishments', dress.embellishments);
-      accumulateScore('features', dress.features);
-      accumulateScore('weddingvenue', dress.weddingvenue);
-
-      // Booleans
-      accumulateScore('has_pockets', dress.has_pockets);
-      accumulateScore('corset_back', dress.corset_back);
-      accumulateScore('shipin48hrs', dress.shipin48hrs);
-
-      // Price bucket (to align with FilterPanel "Price" ranges)
-      accumulateScore('price', priceBucket(dress.price));
-
-      return { ...dress, score };
+      const finalScore = dominance + score; // additive is a small tail
+      return { ...d, score, vector, finalScore };
     });
 
-    // Sort by score DESC, then price ASC, then name ASC
-    return scored.sort((a, b) =>
-      (b.score - a.score) ||
+    // Sort by finalScore (desc), then price asc, then name
+    return withMeta.sort((a, b) =>
+      (b.finalScore - a.finalScore) ||
       (a.price - b.price) ||
       a.name.localeCompare(b.name)
     );
-  }, [dresses, priorityScores]);
+  }, [dresses, priorityScores, sectionOrder, selectedOrder]);
+  const hasPriorities =
+  !!selectedOrder &&
+  Object.values(selectedOrder).some(arr => Array.isArray(arr) && arr.length > 0);
 
+
+  const topScore = sortedDresses.length ? (sortedDresses[0] as any).finalScore : 0;
   return (
     <div className="flex-1">
       <h2 className="text-2xl font-bold mb-4">Results</h2>
@@ -143,11 +184,11 @@ const DressList = ({ dresses, priorityScores }: Props) => {
 
               {/* Tags, Venue, Embellishments, Features */}
               <div className="mt-4 space-y-2">
-                {dress.tags?.length > 0 && (
+                {!!(dress.tags && dress.tags.length) && (
                   <div>
                     <strong>Tags:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {dress.tags.map((tag, idx) => (
+                      {(dress.tags ?? []).map((tag, idx) => (
                         <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {tag}
                         </span>
@@ -156,11 +197,11 @@ const DressList = ({ dresses, priorityScores }: Props) => {
                   </div>
                 )}
 
-                {dress.weddingvenue?.length > 0 && (
+                {!!(dress.weddingvenue && dress.weddingvenue.length) && (
                   <div>
                     <strong>Venue:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {dress.weddingvenue.map((venue, idx) => (
+                      {(dress.weddingvenue ?? []).map((venue, idx) => (
                         <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {venue}
                         </span>
@@ -169,11 +210,11 @@ const DressList = ({ dresses, priorityScores }: Props) => {
                   </div>
                 )}
 
-                {dress.embellishments?.length > 0 && (
+                {!!(dress.embellishments && dress.embellishments.length) && (
                   <div>
                     <strong>Embellishments:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {dress.embellishments.map((emb, idx) => (
+                      {(dress.embellishments ?? []).map((emb, idx) => (
                         <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {emb}
                         </span>
@@ -182,11 +223,11 @@ const DressList = ({ dresses, priorityScores }: Props) => {
                   </div>
                 )}
 
-                {dress.features?.length > 0 && (
+                {!!(dress.features && dress.features.length) && (
                   <div>
                     <strong>Features:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {dress.features.map((feat, idx) => (
+                      {(dress.features ?? []).map((feat, idx) => (
                         <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {feat}
                         </span>
@@ -200,8 +241,30 @@ const DressList = ({ dresses, priorityScores }: Props) => {
             {/* Right: Image */}
             <div className="w-1/3 flex flex-col items-center justify-center">
               <div className="mb-2 text-mauve-900 text-lg font-bold">
-                Priority Score: {dress.score}
-              </div>
+  {(() => {
+    // If there are no priorities selected, don't pretend rank exists
+    if (!hasPriorities || topScore <= 0) {
+      return "Match Score: —";
+    }
+
+    const isTop = (dress as any).finalScore === topScore;
+
+    // floor to avoid accidental 100% on non-top items; cap non-top at 99
+    const rawPct = Math.floor(((dress as any).finalScore / topScore) * 100);
+    const pct = isTop ? 100 : Math.min(99, Math.max(1, rawPct)); // ensure at least 1%
+
+    if (isTop) {
+      return "Priority Pick";
+    } else if (pct >= 90) {
+      return `Strong Match: ${pct}%`;
+    } else if (pct >= 80) {
+      return `Close Match: ${pct}%`;
+    } else {
+      return `Match Score: ${pct}%`;
+    }
+  })()}
+</div>
+
               <img
                 src={`${IMG_BASE}/static/images/${dress.image_path}`}
                 alt={dress.name}

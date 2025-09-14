@@ -33,12 +33,12 @@ type Props = {
 const sections: Record<string, string[]> = {
   Color: ['Ivory', 'Pink', 'White', 'Black', 'Blush', 'Champagne'],
   Silhouette: ['A-line', 'Ballgown', 'Sheath', 'Mermaid', 'Fit-and-Flare'],
-  Neckline: ['Sweetheart', 'Off-the-Shoulder', 'V-neck', 'High Neck', 'Halter','Straight Across'],
+  Neckline: ['Sweetheart', 'Off-the-Shoulder', 'V-neck', 'High Neck', 'Halter', 'Straight Across'],
   Length: ['Knee Length', 'Floor Length', 'Ankle Length', 'Chapel Train', 'Sweep Train', 'Cathedral Train'],
   Fabric: ['Lace', 'Tulle', 'Satin', 'Chiffon', 'Organza'],
   Backstyle: ['Corset Back', 'Zip-up', 'Zipper + Buttons', 'Keyhole Back', 'Illusion Back', 'Lace-Up', 'Low Back'],
   Tags: ['elegant', 'vintage', 'lace', 'dramatic', 'princess', 'twilight', 'minimal', 'modern', 'sleek'],
-  Embellishments: ['beading', 'embroidery', 'sequins', 'none', 'floral appliqué', 'glitter tulle', 'crystals','pearls'],
+  Embellishments: ['beading', 'embroidery', 'sequins', 'none', 'floral appliqué', 'glitter tulle', 'crystals', 'pearls'],
   Features: ['pockets', 'convertible', 'Stay-in-place straps', 'built-in bra', 'removable train', 'easy bustle'],
   Collection: ['Golden Hour', 'Midnight Bloom', 'Modern Muse', 'Botanical Romance', 'Moonlight Collection', 'Rose Reverie'],
   Season: ['spring', 'summer', 'fall', 'winter'],
@@ -55,7 +55,7 @@ const FilterPanel = ({
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  // UI-only highlight when a section has ≥1 selection
+  // Highlight a section title when it has ≥1 selection
   const hasAnySelection = (key: string) => {
     const v = (filters as any)[key];
     if (Array.isArray(v)) return v.length > 0;
@@ -146,7 +146,9 @@ const FilterPanel = ({
                 {({ handleProps }) => (
                   <div className="mb-4 border-b border-mauve-200 pb-2">
                     <div className="flex items-center cursor-pointer">
+                      {/* Drag handle on the left (section) */}
                       <span
+                        {...handleProps.attributes}
                         {...handleProps.listeners}
                         ref={handleProps.ref}
                         className="mr-2 cursor-grab text-mauve-400 hover:text-mauve-600 select-none"
@@ -155,6 +157,7 @@ const FilterPanel = ({
                         ☰
                       </span>
 
+                      {/* Section toggle button */}
                       <button
                         className={`text-left font-semibold transition flex-1 rounded
                           ${selectedInSection
@@ -175,29 +178,37 @@ const FilterPanel = ({
                         >
                           {selectedItems.map(item => (
                             <SortableItem key={`${fieldKey}:${item}`} id={`${fieldKey}:${item}`}>
-                              {({ handleProps }) => (
-                                <label className="flex items-center mb-1 text-sm text-mauve-800 font-medium">
-                                  <span
-                                    {...handleProps.listeners}
-                                    ref={handleProps.ref}
-                                    className="mr-2 cursor-grab text-mauve-400 hover:text-mauve-600 select-none"
-                                    title="Drag item"
-                                  >
-                                    ☰
-                                  </span>
-                                  <input
-                                    type="checkbox"
-                                    checked={
-                                      Array.isArray((filters as any)[fieldKey])
-                                        ? ((filters as any)[fieldKey] as string[]).includes(item)
-                                        : false
-                                    }
-                                    onChange={() => handleMultiCheckbox(fieldKey, item)}
-                                    className="mr-2"
-                                  />
-                                  {item}
-                                </label>
-                              )}
+                              {({ handleProps }) => {
+                                const inputId = `${fieldKey}-${item}`.replace(/\s+/g, '_');
+                                return (
+                                  <div className="flex items-center mb-1 text-sm text-mauve-800 font-medium select-none">
+                                    <span
+                                      {...handleProps.attributes}
+                                      {...handleProps.listeners}
+                                      ref={handleProps.ref}
+                                      className="mr-2 cursor-grab text-mauve-400 hover:text-mauve-600"
+                                      title="Drag item"
+                                    >
+                                      ☰
+                                    </span>
+                                    <input
+                                      id={inputId}
+                                      type="checkbox"
+                                      className="mr-2"
+                                      onPointerDown={(e) => e.stopPropagation()} // prevent starting drag from input
+                                      checked={
+                                        Array.isArray((filters as any)[fieldKey])
+                                          ? ((filters as any)[fieldKey] as string[]).includes(item)
+                                          : false
+                                      }
+                                      onChange={() => handleMultiCheckbox(fieldKey, item)}
+                                    />
+                                    <label htmlFor={inputId} className="cursor-pointer select-none">
+                                      {item}
+                                    </label>
+                                  </div>
+                                );
+                              }}
                             </SortableItem>
                           ))}
                         </SortableContext>
@@ -205,21 +216,28 @@ const FilterPanel = ({
                         {/* Unselected items */}
                         {items
                           ?.filter(item => !selectedItems.includes(item))
-                          .map(item => (
-                            <label key={item} className="flex items-center mb-1 text-sm text-mauve-600">
-                              <input
-                                type="checkbox"
-                                checked={
-                                  Array.isArray((filters as any)[fieldKey])
-                                    ? ((filters as any)[fieldKey] as string[]).includes(item)
-                                    : false
-                                }
-                                onChange={() => handleMultiCheckbox(fieldKey, item)}
-                                className="mr-2"
-                              />
-                              {item}
-                            </label>
-                          ))}
+                          .map(item => {
+                            const inputId = `${fieldKey}-${item}`.replace(/\s+/g, '_');
+                            return (
+                              <div key={item} className="flex items-center mb-1 text-sm text-mauve-600 select-none">
+                                <input
+                                  id={inputId}
+                                  type="checkbox"
+                                  className="mr-2"
+                                  onPointerDown={(e) => e.stopPropagation()} // avoid dragging from input
+                                  checked={
+                                    Array.isArray((filters as any)[fieldKey])
+                                      ? ((filters as any)[fieldKey] as string[]).includes(item)
+                                      : false
+                                  }
+                                  onChange={() => handleMultiCheckbox(fieldKey, item)}
+                                />
+                                <label htmlFor={inputId} className="cursor-pointer select-none">
+                                  {item}
+                                </label>
+                              </div>
+                            );
+                          })}
                       </div>
                     )}
                   </div>

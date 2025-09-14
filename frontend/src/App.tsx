@@ -138,7 +138,12 @@ export default function App() {
           selectedOrder={selectedOrder}
           setSelectedOrder={setSelectedOrder}
         />
-        <DressList dresses={dresses} priorityScores={priorityScores} />
+        <DressList
+  dresses={dresses}
+  priorityScores={priorityScores}
+  sectionOrder={sectionOrder}
+  selectedOrder={selectedOrder}
+/>
       </div>
 
       <div className="text-center mt-8">
