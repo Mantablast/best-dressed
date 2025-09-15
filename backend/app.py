@@ -3,6 +3,12 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy import or_
+from sqlalchemy import create_engine
+
+DATABASE_URL = f"postgresql://postgres:{os.environ["SUPABASE_DB_PW"]}@db.{os.environ["SUPABASE_PROJECT"]}.supabase.co:5432/postgres?sslmode=require"
+CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "*")
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
 # App setup
 app = Flask(__name__, instance_relative_config=True)
 basedir = os.path.abspath(os.path.dirname(__file__))

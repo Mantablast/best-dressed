@@ -1,4 +1,3 @@
-# seed.py
 from app import app, db
 from models import WeddingDress
 
