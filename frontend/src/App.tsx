@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback, useRef, startTransition } fr
 import axios from 'axios';
 import FilterPanel from './components/FilterPanel';
 import DressList from './components/DressList';
+const API_BASE = (import.meta as any).env?.VITE_API_BASE?.replace(/\/$/, '') ?? 'http://localhost:5050';
 
 type Dress = {
   id: number;
@@ -107,7 +108,7 @@ export default function App() {
     });
 
     axios
-      .get(`http://127.0.0.1:5050/api/dresses?${searchParams.toString()}`)
+      .get(`${API_BASE}/api/dresses?${searchParams.toString()}`)
       .then((res) => setDresses(res.data))
       .catch((err) => console.error('Error fetching dresses:', err));
   }, [filters]);

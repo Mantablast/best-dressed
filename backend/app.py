@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "*")
+CORS(app, resources={r"/api/*": {"origins": CORS_ORIGIN}})
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 # App setup

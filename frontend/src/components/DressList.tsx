@@ -57,10 +57,20 @@ const DressList = ({
     maximumFractionDigits: 0
   });
 
-  const IMG_BASE =
-    (import.meta as any)?.env?.VITE_IMG_BASE_URL ?? 'http://localhost:5050';
+  // Image base comes from Vercel env (Supabase) or falls back to local backend
+  const IMG_BASE: string =
+    (import.meta as any)?.env?.VITE_IMG_BASE_URL?.replace(/\/$/, '') ?? '';
 
-  // Build normalized key set for a dress
+  const getImgSrc = (imagePath: string) => {
+    if (IMG_BASE) {
+      // If imagePath already starts with 'dresses/', don't double it
+      const path = /^dresses\//.test(imagePath) ? imagePath : `dresses/${imagePath}`;
+      return `${IMG_BASE}/${path}`;
+    }
+    return `http://localhost:5050/static/images/${imagePath}`;
+  };
+
+  // Build a normalized key set for a dress
   const keysForDress = (d: Dress): Set<string> => {
     const s = new Set<string>();
     const add = (key: string, val: string | string[] | boolean | undefined) => {
@@ -98,12 +108,11 @@ const DressList = ({
     const safeSectionOrder = Array.isArray(sectionOrder) ? sectionOrder : [];
     const safeSelectedOrder: Record<string, string[]> =
       selectedOrder && typeof selectedOrder === 'object' ? selectedOrder : {};
-  
-  
+
     const withMeta = dresses.map(d => {
       const keyset = keysForDress(d);
-  
-      // Additive score (still useful as micro tiebreaker)
+
+      // Additive score (small tiebreaker)
       let score = 0;
       keyset.forEach(k => {
         const pts = priorityScores[k];
@@ -145,134 +154,138 @@ const DressList = ({
       a.name.localeCompare(b.name)
     );
   }, [dresses, priorityScores, sectionOrder, selectedOrder]);
-  const hasPriorities =
-  !!selectedOrder &&
-  Object.values(selectedOrder).some(arr => Array.isArray(arr) && arr.length > 0);
 
+  // Are there any priorities at all? (controls label behavior on empty state)
+  const hasPriorities =
+    !!selectedOrder &&
+    Object.values(selectedOrder).some(arr => Array.isArray(arr) && arr.length > 0);
 
   const topScore = sortedDresses.length ? (sortedDresses[0] as any).finalScore : 0;
+
   return (
     <div className="flex-1">
       <h2 className="text-2xl font-bold mb-4">Results</h2>
       <div className="grid gap-6">
-        {sortedDresses.map((dress) => (
-          <div
-            key={dress.id}
-            className="flex bg-mauve-50 border border-mauve-200 rounded-2xl shadow p-6 transition hover:shadow-md"
-          >
-            {/* Left: Text Content */}
-            <div className="flex-1 pr-6">
-              <h3 className="text-xl font-semibold text-mauve-900 mb-2">
-                {dress.name}
-              </h3>
-              <div className="grid grid-cols-2 gap-2 text-sm text-mauve-800">
-                <p><strong>Silhouette:</strong> {dress.silhouette}</p>
-                <p><strong>Ships in 48hrs:</strong> {dress.shipin48hrs ? "Yes" : "No"}</p>
-                <p><strong>Neckline:</strong> {dress.neckline}</p>
-                <p><strong>Sleeves:</strong> {dress.strapsleevelayout}</p>
-                <p><strong>Length:</strong> {dress.length}</p>
-                <p><strong>Collection:</strong> {dress.collection}</p>
-                <p><strong>Fabric:</strong> {dress.fabric}</p>
-                <p><strong>Color:</strong> {dress.color}</p>
-                <p><strong>Back Style:</strong> {dress.backstyle}</p>
-                <p><strong>Price:</strong> {fmtCurrency.format(dress.price)}</p>
-                <p><strong>Size Range:</strong> {dress.size_range}</p>
-                <p><strong>Season:</strong> {dress.season}</p>
-                <p><strong>Pockets:</strong> {dress.has_pockets ? "Yes" : "No"}</p>
-                <p><strong>Corset Back:</strong> {dress.corset_back ? "Yes" : "No"}</p>
+        {sortedDresses.map((dress) => {
+          const finalScore = (dress as any).finalScore as number;
+          const isTop = finalScore === topScore;
+
+          // Percent display rules:
+          // - If no priorities: show "—"
+          // - Non-top: floor, min 1%, max 99%
+          // - Top: "Priority Pick"
+          let scoreLabel: string;
+          if (!hasPriorities || topScore <= 0) {
+            scoreLabel = "Match Score: —";
+          } else if (isTop) {
+            scoreLabel = "Priority Pick";
+          } else {
+            const rawPct = Math.floor((finalScore / topScore) * 100);
+            const pct = Math.min(99, Math.max(1, rawPct));
+            if (pct >= 90) scoreLabel = `Strong Match: ${pct}%`;
+            else if (pct >= 80) scoreLabel = `Close Match: ${pct}%`;
+            else scoreLabel = `Match Score: ${pct}%`;
+          }
+
+          const imgSrc = getImgSrc(dress.image_path);
+
+          return (
+            <div
+              key={dress.id}
+              className="flex bg-mauve-50 border border-mauve-200 rounded-2xl shadow p-6 transition hover:shadow-md"
+            >
+              {/* Left: Text Content */}
+              <div className="flex-1 pr-6">
+                <h3 className="text-xl font-semibold text-mauve-900 mb-2">
+                  {dress.name}
+                </h3>
+                <div className="grid grid-cols-2 gap-2 text-sm text-mauve-800">
+                  <p><strong>Silhouette:</strong> {dress.silhouette}</p>
+                  <p><strong>Ships in 48hrs:</strong> {dress.shipin48hrs ? "Yes" : "No"}</p>
+                  <p><strong>Neckline:</strong> {dress.neckline}</p>
+                  <p><strong>Sleeves:</strong> {dress.strapsleevelayout}</p>
+                  <p><strong>Length:</strong> {dress.length}</p>
+                  <p><strong>Collection:</strong> {dress.collection}</p>
+                  <p><strong>Fabric:</strong> {dress.fabric}</p>
+                  <p><strong>Color:</strong> {dress.color}</p>
+                  <p><strong>Back Style:</strong> {dress.backstyle}</p>
+                  <p><strong>Price:</strong> {fmtCurrency.format(dress.price)}</p>
+                  <p><strong>Size Range:</strong> {dress.size_range}</p>
+                  <p><strong>Season:</strong> {dress.season}</p>
+                  <p><strong>Pockets:</strong> {dress.has_pockets ? "Yes" : "No"}</p>
+                  <p><strong>Corset Back:</strong> {dress.corset_back ? "Yes" : "No"}</p>
+                </div>
+
+                {/* Tags, Venue, Embellishments, Features */}
+                <div className="mt-4 space-y-2">
+                  {!!(dress.tags && dress.tags.length) && (
+                    <div>
+                      <strong>Tags:</strong>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {(dress.tags ?? []).map((tag, idx) => (
+                          <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!!(dress.weddingvenue && dress.weddingvenue.length) && (
+                    <div>
+                      <strong>Venue:</strong>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {(dress.weddingvenue ?? []).map((venue, idx) => (
+                          <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
+                            {venue}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!!(dress.embellishments && dress.embellishments.length) && (
+                    <div>
+                      <strong>Embellishments:</strong>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {(dress.embellishments ?? []).map((emb, idx) => (
+                          <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
+                            {emb}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!!(dress.features && dress.features.length) && (
+                    <div>
+                      <strong>Features:</strong>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {(dress.features ?? []).map((feat, idx) => (
+                          <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
+                            {feat}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Tags, Venue, Embellishments, Features */}
-              <div className="mt-4 space-y-2">
-                {!!(dress.tags && dress.tags.length) && (
-                  <div>
-                    <strong>Tags:</strong>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {(dress.tags ?? []).map((tag, idx) => (
-                        <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {!!(dress.weddingvenue && dress.weddingvenue.length) && (
-                  <div>
-                    <strong>Venue:</strong>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {(dress.weddingvenue ?? []).map((venue, idx) => (
-                        <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
-                          {venue}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {!!(dress.embellishments && dress.embellishments.length) && (
-                  <div>
-                    <strong>Embellishments:</strong>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {(dress.embellishments ?? []).map((emb, idx) => (
-                        <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
-                          {emb}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {!!(dress.features && dress.features.length) && (
-                  <div>
-                    <strong>Features:</strong>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {(dress.features ?? []).map((feat, idx) => (
-                        <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
-                          {feat}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              {/* Right: Score + Image */}
+              <div className="w-1/3 flex flex-col items-center justify-center">
+                <div className="mb-2 text-mauve-900 text-lg font-bold">
+                  {scoreLabel}
+                </div>
+                <img
+                  src={imgSrc}
+                  alt={dress.name}
+                  className="max-h-80 object-contain rounded-xl bg-white"
+                />
               </div>
             </div>
-
-            {/* Right: Image */}
-            <div className="w-1/3 flex flex-col items-center justify-center">
-              <div className="mb-2 text-mauve-900 text-lg font-bold">
-  {(() => {
-    // If there are no priorities selected, don't pretend rank exists
-    if (!hasPriorities || topScore <= 0) {
-      return "Match Score: —";
-    }
-
-    const isTop = (dress as any).finalScore === topScore;
-
-    // floor to avoid accidental 100% on non-top items; cap non-top at 99
-    const rawPct = Math.floor(((dress as any).finalScore / topScore) * 100);
-    const pct = isTop ? 100 : Math.min(99, Math.max(1, rawPct)); // ensure at least 1%
-
-    if (isTop) {
-      return "Priority Pick";
-    } else if (pct >= 90) {
-      return `Strong Match: ${pct}%`;
-    } else if (pct >= 80) {
-      return `Close Match: ${pct}%`;
-    } else {
-      return `Match Score: ${pct}%`;
-    }
-  })()}
-</div>
-
-              <img
-                src={`${IMG_BASE}/static/images/${dress.image_path}`}
-                alt={dress.name}
-                className="max-h-80 object-contain rounded-xl bg-white"
-              />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
