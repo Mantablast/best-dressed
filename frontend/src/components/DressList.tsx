@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+
 
 type Dress = {
   id: number;
