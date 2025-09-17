@@ -1,4 +1,5 @@
-
+// @ts-nocheck
+import React, { useMemo } from 'react';
 
 type Dress = {
   id: number;

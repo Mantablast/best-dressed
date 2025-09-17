@@ -3,6 +3,10 @@ import type { Filters } from "@/types/filters";
 import FilterPanel from "@/components/FilterPanel";
 import DressList from "@/components/DressList";
 
+
+type DressListProps = {
+  items: any[]; 
+};
 // Single source of truth for initial filters
 const INITIAL_FILTERS: Filters = {
   color: [],
