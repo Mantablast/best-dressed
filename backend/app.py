@@ -5,7 +5,7 @@ from flask_cors import CORS
 from sqlalchemy import or_
 from sqlalchemy import create_engine
 
-DATABASE_URL = f"postgresql://postgres:{os.environ["SUPABASE_DB_PW"]}@db.{os.environ["SUPABASE_PROJECT"]}.supabase.co:5432/postgres?sslmode=require"
+DATABASE_URL = os.environ["SUPABASE_FULL_URL"]
 CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "*")
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
