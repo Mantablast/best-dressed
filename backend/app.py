@@ -5,7 +5,7 @@ from flask_cors import CORS
 from sqlalchemy import or_
 from sqlalchemy import create_engine
 
-DATABASE_URL = os.environ["SUPABASE_FULL_URL"]
+DATABASE_URL = os.environ.get("DATABASE_URL")
 CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "*")
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
@@ -151,5 +151,4 @@ def get_dresses():
 
 
 if __name__ == "__main__":
-    print(f"🌐 Using DB at {db_path}")
-    app.run(debug=True, host="0.0.0.0", port=5050)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5050)))
