@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { Filters } from "@/types/filters";
 import FilterPanel from "@/components/FilterPanel";
 import DressList from "@/components/DressList";
-
+import type { ComponentType } from "react";
 
 type DressListProps = {
   items: any[]; 
@@ -72,7 +72,7 @@ export default function App() {
       return colorOk && minOk && maxOk;
     });
   }, [filters]);
-
+  const DressListAdapter = DressList as unknown as ComponentType<{ items: Dress[] }>;
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <div className="mx-auto max-w-6xl p-4 md:p-8 grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -85,7 +85,7 @@ export default function App() {
         </aside>
 
         <main className="md:col-span-8 lg:col-span-9">
-          <DressList items={dresses} />
+          <DressListAdapter items={dresses} />
         </main>
       </div>
     </div>
