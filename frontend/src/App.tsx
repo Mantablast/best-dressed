@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, useRef, startTransition } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import axios from 'axios';
 import FilterPanel from './components/FilterPanel';
 import DressList from './components/DressList';
@@ -39,9 +39,9 @@ type Filters = {
   features: string[];
   collection: string[];
   season: string[];
-  has_pockets: string;
-  corset_back: string;
-  shipin48hrs: string;
+  has_pockets: string;   // keep as string flag ('' | 'true' | 'false')
+  corset_back: string;   // same pattern
+  shipin48hrs: string;   // same pattern
   price: string[];
 };
 
@@ -66,13 +66,13 @@ export default function App() {
     features: [],
     collection: [],
     season: [],
-    shipin48hrs: "",
-    has_pockets: "",
-    corset_back: "",
+    shipin48hrs: '',
+    has_pockets: '',
+    corset_back: '',
     price: [],
   });
 
-  // New: ordering state owned by App (so FilterPanel won't push to parent)
+  // New: ordering state owned by App
   const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
   const [selectedOrder, setSelectedOrder] = useState<Record<string, string[]>>({});
 
@@ -97,32 +97,43 @@ export default function App() {
   }, [sectionOrder, selectedOrder]);
 
   const fetchDresses = useCallback(() => {
-  const searchParams = new URLSearchParams(window.location.search);
-  Object.entries(filters).forEach(([key, value]) => {
-    ...
-  });
+    const searchParams = new URLSearchParams();
 
-  const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:5050';
+    Object.entries(filters).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((val) => {
+          if (val) searchParams.append(key, val);
+        });
+      } else if (value !== '') {
+        searchParams.append(key, value);
+      }
+    });
 
-  axios
-    .get(`${API_BASE}/api/dresses?${searchParams.toString()}`)
-    .then((res) => setDresses(res.data))
-    .catch((err) => console.error("Error fetching dresses:", err));
-}, [filters]);
+    const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:5050';
 
-  useEffect(() => { fetchDresses(); }, [fetchDresses]);
+    axios
+      .get(`${API_BASE}/api/dresses?${searchParams.toString()}`)
+      .then((res) => setDresses(res.data))
+      .catch((err) => console.error('Error fetching dresses:', err));
+  }, [filters]);
+
+  useEffect(() => {
+    fetchDresses();
+  }, [fetchDresses]);
 
   return (
     <div>
       <div style={{ textAlign: "center", marginBottom: "20px" }}>
-        <h3 className="font-bold mb-4">Best Dressed - Priority Search Concept</h3>
+        <h3 className="font-bold mb-4">
+          Best Dressed - Priority Search Concept
+        </h3>
         <p style={{ maxWidth: "800px", margin: "0 auto" }}>
-          A search filter proof of concept that allows users to choose and sort filter
-          items by priority to have the closest priority match displayed to them with
-          a real-time priority score. It aids the user with their decision making, making a basic
-          filter search a much more customized experience.
-          Update Sep 13, 2025:  I have just recently learned that this concept is called
-          lexicographic ordering. 
+          A search filter proof of concept that allows users to choose and sort
+          filter items by priority to have the closest priority match displayed
+          to them with a real-time priority score. It aids the user with their
+          decision making, making a basic filter search a much more customized
+          experience. Update Sep 13, 2025: I have just recently learned that
+          this concept is called lexicographic ordering.
         </p>
       </div>
 
@@ -130,18 +141,17 @@ export default function App() {
         <FilterPanel
           filters={filters}
           setFilters={setFilters}
-          // pass ordering state down (no callbacks that set App from child)
           sectionOrder={sectionOrder}
           setSectionOrder={setSectionOrder}
           selectedOrder={selectedOrder}
           setSelectedOrder={setSelectedOrder}
         />
         <DressList
-  dresses={dresses}
-  priorityScores={priorityScores}
-  sectionOrder={sectionOrder}
-  selectedOrder={selectedOrder}
-/>
+          dresses={dresses}
+          priorityScores={priorityScores}
+          sectionOrder={sectionOrder}
+          selectedOrder={selectedOrder}
+        />
       </div>
 
       <div className="text-center mt-8">

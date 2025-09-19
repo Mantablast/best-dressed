@@ -8,6 +8,7 @@ type SortableItemProps = {
     handleProps: {
       ref: (el: HTMLElement | null) => void;
       listeners: any;
+      attributes: React.HTMLAttributes<HTMLElement>;
     };
   }) => React.ReactNode;
 };
@@ -33,6 +34,7 @@ export default function SortableItem({ id, children }: SortableItemProps) {
         handleProps: {
           ref: setActivatorNodeRef,
           listeners,
+          attributes,
         },
       })}
     </div>
