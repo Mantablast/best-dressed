@@ -97,20 +97,18 @@ export default function App() {
   }, [sectionOrder, selectedOrder]);
 
   const fetchDresses = useCallback(() => {
-    const searchParams = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach((val) => { if (val) searchParams.append(key, val); });
-      } else if (value !== '') {
-        searchParams.append(key, value);
-      }
-    });
+  const searchParams = new URLSearchParams(window.location.search);
+  Object.entries(filters).forEach(([key, value]) => {
+    ...
+  });
 
-    axios
-      .get(`http://127.0.0.1:5050/api/dresses?${searchParams.toString()}`)
-      .then((res) => setDresses(res.data))
-      .catch((err) => console.error('Error fetching dresses:', err));
-  }, [filters]);
+  const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:5050';
+
+  axios
+    .get(`${API_BASE}/api/dresses?${searchParams.toString()}`)
+    .then((res) => setDresses(res.data))
+    .catch((err) => console.error("Error fetching dresses:", err));
+}, [filters]);
 
   useEffect(() => { fetchDresses(); }, [fetchDresses]);
 
