@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import axios from 'axios';
 import FilterPanel from './components/FilterPanel';
 import DressList from './components/DressList';
-import type { Filters } from "@/types/filters";
+import type { Filters } from "./types/filters";
 
 type Dress = {
   id: number;
@@ -83,15 +83,17 @@ export default function App() {
   const fetchDresses = useCallback(() => {
     const searchParams = new URLSearchParams();
 
-    Object.entries(filters).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach((val) => {
-          if (val) searchParams.append(key, val);
-        });
-      } else if (value !== '') {
-        searchParams.append(key, value);
+    Object.entries(filters as Record<string, unknown>).forEach(([key, value]) => {
+  if (Array.isArray(value)) {
+    for (const v of value) {
+      if (v != null && String(v).trim() !== '') {
+        searchParams.append(key, String(v));
       }
-    });
+    }
+  } else if (value != null && String(value).trim() !== '') {
+    searchParams.append(key, String(value));
+  }
+});
 
     const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:5050';
 

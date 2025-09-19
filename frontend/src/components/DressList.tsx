@@ -1,8 +1,9 @@
-
+import { useMemo } from 'react';
 
 type Dress = {
   id: number;
   name: string;
+  image_path: string;
   silhouette: string;
   shipin48hrs: boolean;
   neckline: string;
@@ -14,14 +15,13 @@ type Dress = {
   backstyle: string;
   price: number;
   size_range: string;
-  tags?: string[];
-  weddingvenue?: string[];
+  tags: string[];
+  weddingvenue: string[];
   season: string;
-  embellishments?: string[];
-  features?: string[];
+  embellishments: string[];
+  features: string[];
   has_pockets: boolean;
   corset_back: boolean;
-  image_path: string;
 };
 
 type Props = {
@@ -65,7 +65,7 @@ const DressList = ({
     const s = new Set<string>();
     const add = (key: string, val: string | string[] | boolean | undefined) => {
       if (Array.isArray(val)) {
-        val.forEach(v => s.add(`${key}:${norm(v)}`));
+        val.forEach((v: string) => s.add(`${key}:${norm(v)}`));
       } else if (typeof val === 'boolean') {
         if (val) s.add(`${key}:${norm(true)}`);
       } else if (typeof val === 'string' && val) {
@@ -98,21 +98,20 @@ const DressList = ({
     const safeSectionOrder = Array.isArray(sectionOrder) ? sectionOrder : [];
     const safeSelectedOrder: Record<string, string[]> =
       selectedOrder && typeof selectedOrder === 'object' ? selectedOrder : {};
-  
-  
-    const withMeta = dresses.map(d => {
+
+    const withMeta = dresses.map((d: Dress) => {
       const keyset = keysForDress(d);
-  
+
       // Additive score (still useful as micro tiebreaker)
       let score = 0;
-      keyset.forEach(k => {
+      keyset.forEach((k: string) => {
         const pts = priorityScores[k];
         if (pts) score += pts;
       });
 
       // Lexicographic vector
       const NO_MATCH = 1e9;
-      const vector = safeSectionOrder.map(section => {
+      const vector = safeSectionOrder.map((section: string) => {
         const fieldKey = section.toLowerCase();
         const items = safeSelectedOrder[fieldKey] ?? [];
         let best = NO_MATCH;
@@ -145,17 +144,18 @@ const DressList = ({
       a.name.localeCompare(b.name)
     );
   }, [dresses, priorityScores, sectionOrder, selectedOrder]);
-  const hasPriorities =
-  !!selectedOrder &&
-  Object.values(selectedOrder).some(arr => Array.isArray(arr) && arr.length > 0);
 
+  const hasPriorities =
+    !!selectedOrder &&
+    Object.values(selectedOrder).some((arr: unknown) => Array.isArray(arr) && (arr as unknown[]).length > 0);
 
   const topScore = sortedDresses.length ? (sortedDresses[0] as any).finalScore : 0;
+
   return (
     <div className="flex-1">
       <h2 className="text-2xl font-bold mb-4">Results</h2>
       <div className="grid gap-6">
-        {sortedDresses.map((dress) => (
+        {sortedDresses.map((dress: Dress) => (
           <div
             key={dress.id}
             className="flex bg-mauve-50 border border-mauve-200 rounded-2xl shadow p-6 transition hover:shadow-md"
@@ -188,7 +188,7 @@ const DressList = ({
                   <div>
                     <strong>Tags:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {(dress.tags ?? []).map((tag, idx) => (
+                      {(dress.tags ?? []).map((tag: string, idx: number) => (
                         <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {tag}
                         </span>
@@ -201,7 +201,7 @@ const DressList = ({
                   <div>
                     <strong>Venue:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {(dress.weddingvenue ?? []).map((venue, idx) => (
+                      {(dress.weddingvenue ?? []).map((venue: string, idx: number) => (
                         <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {venue}
                         </span>
@@ -214,7 +214,7 @@ const DressList = ({
                   <div>
                     <strong>Embellishments:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {(dress.embellishments ?? []).map((emb, idx) => (
+                      {(dress.embellishments ?? []).map((emb: string, idx: number) => (
                         <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {emb}
                         </span>
@@ -227,7 +227,7 @@ const DressList = ({
                   <div>
                     <strong>Features:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {(dress.features ?? []).map((feat, idx) => (
+                      {(dress.features ?? []).map((feat: string, idx: number) => (
                         <span key={idx} className="bg-mauve-100 text-mauve-800 px-2 py-1 rounded-full text-xs">
                           {feat}
                         </span>
@@ -241,29 +241,29 @@ const DressList = ({
             {/* Right: Image */}
             <div className="w-1/3 flex flex-col items-center justify-center">
               <div className="mb-2 text-mauve-900 text-lg font-bold">
-  {(() => {
-    // If there are no priorities selected, don't pretend rank exists
-    if (!hasPriorities || topScore <= 0) {
-      return "Match Score: —";
-    }
+                {(() => {
+                  // If there are no priorities selected, don't pretend rank exists
+                  if (!hasPriorities || topScore <= 0) {
+                    return "Match Score: —";
+                  }
 
-    const isTop = (dress as any).finalScore === topScore;
+                  const isTop = (dress as any).finalScore === topScore;
 
-    // floor to avoid accidental 100% on non-top items; cap non-top at 99
-    const rawPct = Math.floor(((dress as any).finalScore / topScore) * 100);
-    const pct = isTop ? 100 : Math.min(99, Math.max(1, rawPct)); // ensure at least 1%
+                  // floor to avoid accidental 100% on non-top items; cap non-top at 99
+                  const rawPct = Math.floor(((dress as any).finalScore / topScore) * 100);
+                  const pct = isTop ? 100 : Math.min(99, Math.max(1, rawPct)); // ensure at least 1%
 
-    if (isTop) {
-      return "Priority Pick";
-    } else if (pct >= 90) {
-      return `Strong Match: ${pct}%`;
-    } else if (pct >= 80) {
-      return `Close Match: ${pct}%`;
-    } else {
-      return `Match Score: ${pct}%`;
-    }
-  })()}
-</div>
+                  if (isTop) {
+                    return "Priority Pick";
+                  } else if (pct >= 90) {
+                    return `Strong Match: ${pct}%`;
+                  } else if (pct >= 80) {
+                    return `Close Match: ${pct}%`;
+                  } else {
+                    return `Match Score: ${pct}%`;
+                  }
+                })()}
+              </div>
 
               <img
                 src={`${IMG_BASE}/static/images/${dress.image_path}`}
