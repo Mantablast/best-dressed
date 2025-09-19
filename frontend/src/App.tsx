@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import axios from 'axios';
 import FilterPanel from './components/FilterPanel';
 import DressList from './components/DressList';
+import type { Filters } from "@/types/filters";
 
 type Dress = {
   id: number;
@@ -27,23 +28,6 @@ type Dress = {
   corset_back: boolean;
 };
 
-type Filters = {
-  color: string[];
-  silhouette: string[];
-  neckline: string[];
-  length: string[];
-  fabric: string[];
-  backstyle: string[];
-  tags: string[];
-  embellishments: string[];
-  features: string[];
-  collection: string[];
-  season: string[];
-  has_pockets: string;   // keep as string flag ('' | 'true' | 'false')
-  corset_back: string;   // same pattern
-  shipin48hrs: string;   // same pattern
-  price: string[];
-};
 
 // --- Lifted ordering state lives here ---
 const DEFAULT_SECTION_ORDER = [

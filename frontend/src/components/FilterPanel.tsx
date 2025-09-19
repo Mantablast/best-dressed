@@ -14,10 +14,11 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import SortableItem from './SortableItem';
+import type { Filters } from "@/types/filters";
 
 const priceRanges = ['0-500', '500-1000', '1000-1500', '1500-2000', '2000+'];
 
-type Filters = { [key: string]: string[] | string };
+
 
 type Props = {
   filters: Filters;
