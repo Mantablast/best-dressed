@@ -266,7 +266,7 @@ const DressList = ({
               </div>
 
               <img
-                src={`${IMG_BASE}/static/images/${dress.image_path}`}
+                src={`${IMG_BASE}${dress.image_path}`}
                 alt={dress.name}
                 className="max-h-80 object-contain rounded-xl bg-white"
               />
