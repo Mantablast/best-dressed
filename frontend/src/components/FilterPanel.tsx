@@ -99,7 +99,7 @@ const FilterPanel = ({
   );
 
   return (
-    <div className="w-72 bg-white border border-mauve-200 rounded-2xl shadow p-6 h-fit sticky top-8 overflow-y-auto max-h-screen">
+    <div className="w-72 bg-white border border-mauve-200 rounded-2xl shadow p-6 h-fit sticky top-8 overflow-y-auto max-h-screen bg-[#d5d5f7]">
       <h3 className="text-xs font-bold mb-4">
         Drag the sections and checked items around to identify what dress features are most important.
         (Most important items and sections go to the top.)
@@ -145,7 +145,7 @@ const FilterPanel = ({
             return (
               <SortableItem key={section} id={section}>
                 {({ handleProps }) => (
-                  <div className="mb-4 border-b border-mauve-200 pb-2 bg-[#d5d5f7]">
+                  <div className="mb-4 border-b border-mauve-200 pb-2">
                     <div className="flex items-center cursor-pointer">
                       {/* Drag handle on the left (section) */}
                       <span
