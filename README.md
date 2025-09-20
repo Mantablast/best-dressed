@@ -29,7 +29,7 @@ Users can drag entire filter sections *and* individual selected values to rank t
 
 ## 🌐 Live Architecture
 
-\`\`\`plaintext
+```plaintext
 ┌─────────────┐       HTTPS        ┌─────────────┐       SQL         ┌──────────────┐
 │  Frontend   │  ───────────────▶  │   Backend   │  ───────────────▶ │  Supabase DB │
 │ (Vercel)    │                    │ (Render)    │                   │ (PostgreSQL) │
@@ -40,7 +40,7 @@ Users can drag entire filter sections *and* individual selected values to rank t
 └─────────────┘                    └─────────────┘
         ▲
         │ Loads dress images from Supabase public storage
-\`\`\`
+```
 
 ---
 
