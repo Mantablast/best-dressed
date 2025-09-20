@@ -145,8 +145,8 @@ const FilterPanel = ({
             return (
               <SortableItem key={section} id={section}>
                 {({ handleProps }) => (
-                  <div className="mb-4 border-b border-mauve-200 pb-2 background-color: inherit;">
-                    <div className="flex items-center cursor-pointer background-color: inherit;">
+                  <div className="mb-4 border-b border-mauve-200 pb-2 bg-[#d5d5f7]">
+                    <div className="flex items-center cursor-pointer">
                       {/* Drag handle on the left (section) */}
                       <span
                         {...handleProps.attributes}
