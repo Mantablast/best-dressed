@@ -55,7 +55,7 @@ Users can drag entire filter sections *and* individual selected values to rank t
 
 ### Backend Setup
 
-\`\`\`bash
+```bash
 cd backend
 python3 -m venv venv
 source venv/bin/activate
@@ -66,13 +66,13 @@ python seed.py
 
 # Start the backend
 python app.py
-\`\`\`
+```
 
 ---
 
 ### Frontend Setup
 
-\`\`\`bash
+```bash
 cd frontend
 npm install
 
@@ -82,7 +82,7 @@ echo "VITE_IMG_BASE_URL=http://127.0.0.1:5050/static/images" >> .env
 
 # run local dev server
 npm run dev
-\`\`\`
+```
 
 ---
 
