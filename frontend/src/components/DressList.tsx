@@ -50,13 +50,13 @@ const DressList = ({
         <h2 className="text-2xl font-bold mb-4">Results</h2>
         <div className="grid gap-6">
 
-          <div className="text-sm text-white/70 animate-pulse">Connecting to server… (waking backend)</div>
+          <div className="text-sm text-black/70 animate-pulse">Connecting to server… (waking backend)</div>
         </div>
       </div>
     );
   }
   if (isLoading) {
-    return <p className="text-sm text-white/70 animate-pulse">Connecting to server… (waking backend)</p>;
+    return <p className="text-sm text-black/70 animate-pulse">Connecting to server… (waking backend)</p>;
   }
   if (error) {
     return (
