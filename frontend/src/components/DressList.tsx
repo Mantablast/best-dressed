@@ -29,16 +29,45 @@ type Props = {
   priorityScores: Record<string, number>;
   sectionOrder?: string[];
   selectedOrder?: Record<string, string[]>;
+  isLoading?: boolean;
+  error?: Error | null;
+  onRetry?: () => void;
 };
 
+// Loading if no dresses populate right away
 const DressList = ({
   dresses,
   priorityScores,
   sectionOrder = [],
-  selectedOrder = {}
+  selectedOrder = {},
+  isLoading = false,
+  error = null,
+  onRetry,
 }: Props) => {
-  if (!Array.isArray(dresses) || dresses.length === 0)
-    return <p className="text-gray-500">No dresses found.</p>;
+  if (isLoading) {
+    return (
+      <div className="flex-1">
+        <h2 className="text-2xl font-bold mb-4">Results</h2>
+        <div className="grid gap-6">
+
+          <div className="text-sm text-white/70 animate-pulse">Connecting to server… (waking backend)</div>
+        </div>
+      </div>
+    );
+  }
+  if (isLoading) {
+    return <p className="text-sm text-white/70 animate-pulse">Connecting to server… (waking backend)</p>;
+  }
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
+        <p className="text-sm text-red-200">Having trouble reaching the server.</p>
+        {onRetry && <button onClick={onRetry} className="mt-3 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-sm">Try again</button>}
+      </div>
+    );
+  }
+
+  if (!dresses.length) return <p className="text-gray-500">No dresses found.</p>;
 
   // Helpers
   const norm = (v: unknown) =>
