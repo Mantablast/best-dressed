@@ -1,3 +1,6 @@
+import { useMemo } from "react";
+import { CheckCircle2 } from "lucide-react";
+
 type Dress = {
   id: number;
   name: string;
@@ -38,6 +41,8 @@ type Props = {
   totalCount: number;
   pageInfo?: PageInfo;
   debugMeta?: Record<string, unknown>;
+  sectionOrder?: string[];
+  selectedOrder?: Record<string, string[]>;
   isLoading?: boolean;
   error?: Error | null;
   onRetry?: () => void;
@@ -53,6 +58,114 @@ const IMG_BASE_DEFAULT = "http://127.0.0.1:5050/static/images/";
 const rawImgBase = import.meta.env.VITE_IMG_BASE_URL ?? IMG_BASE_DEFAULT;
 const IMG_BASE = rawImgBase.endsWith("/") ? rawImgBase : `${rawImgBase}/`;
 
+const VALUE_DECAY = 0.65;
+const HIGH_PRIORITY_VALUE_WEIGHT_THRESHOLD = 0.5;
+
+const normalize = (value: string) => value?.trim().toLowerCase();
+
+const buildSelectionTokens = (
+  sectionOrder: string[] = [],
+  selectedOrder: Record<string, string[] | undefined> = {}
+) => {
+  const highPriorityTokens = new Set<string>();
+  const selectedTokens = new Set<string>();
+
+  sectionOrder.forEach((section) => {
+    const key = normalize(section ?? "");
+    if (!key) return;
+    const items = Array.isArray(selectedOrder[key]) ? (selectedOrder[key] as string[]) : [];
+    items.forEach((item, index) => {
+      const normalizedItem = normalize(item ?? "");
+      if (!normalizedItem) return;
+      const token = `${key}:${normalizedItem}`;
+      selectedTokens.add(token);
+      const valueWeight = Math.pow(VALUE_DECAY, index);
+      if (valueWeight >= HIGH_PRIORITY_VALUE_WEIGHT_THRESHOLD) {
+        highPriorityTokens.add(token);
+      }
+    });
+  });
+
+  return { selectedTokens, highPriorityTokens };
+};
+
+const keysForDress = (dress: Dress): Set<string> => {
+  const tokens = new Set<string>();
+  const push = (key: string, value?: string | string[] | boolean | null) => {
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        const normalized = normalize(item ?? "");
+        if (normalized) tokens.add(`${key}:${normalized}`);
+      });
+      return;
+    }
+    if (typeof value === "boolean") {
+      if (value) tokens.add(`${key}:true`);
+      return;
+    }
+    const normalized = normalize((value ?? "") as string);
+    if (normalized) tokens.add(`${key}:${normalized}`);
+  };
+
+  push("color", dress.color);
+  push("silhouette", dress.silhouette);
+  push("neckline", dress.neckline);
+  push("length", dress.length);
+  push("fabric", dress.fabric);
+  push("backstyle", dress.backstyle);
+  push("collection", dress.collection);
+  push("season", dress.season);
+  push("tags", dress.tags);
+  push("embellishments", dress.embellishments);
+  push("features", dress.features);
+  push("weddingvenue", dress.weddingvenue);
+  push("has_pockets", dress.has_pockets);
+  push("corset_back", dress.corset_back);
+  push("shipin48hrs", dress.shipin48hrs);
+
+  return tokens;
+};
+
+const formatCount = (count: number) => `${count} feature${count === 1 ? "" : "s"}`;
+
+type TooltipProps = {
+  id: string;
+  highPriorityMatches: number;
+  totalMatches: number;
+  selectedOrder: Record<string, string[] | undefined>;
+};
+
+const TooltipContent = ({ id, highPriorityMatches, totalMatches, selectedOrder }: TooltipProps) => {
+  const highPrioritySelections = useMemo(() => {
+    let count = 0;
+    Object.values(selectedOrder).forEach((arr) => {
+      if (!Array.isArray(arr)) return;
+      arr.slice(0, 3).forEach((item) => {
+        if (normalize(item ?? "")) count += 1;
+      });
+    });
+    return count;
+  }, [selectedOrder]);
+
+  const topLabel = highPrioritySelections >= 3 ? "top 3" : `top ${highPrioritySelections || 0}`;
+
+  return (
+    <div
+      id={id}
+      role="tooltip"
+      className="pointer-events-none mt-2 max-w-xs origin-top-right rounded-lg border border-emerald-200 bg-white/95 px-3 py-2 text-xs text-emerald-900 shadow-lg opacity-0 translate-y-1 transition-all duration-150 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:translate-y-0"
+    >
+      <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-emerald-700">Match insight</p>
+      <p className="mt-1 leading-snug">
+        This item has <strong>{formatCount(highPriorityMatches)}</strong> in your {topLabel}.
+      </p>
+      <p className="mt-1 leading-snug">
+        Overall matches: <strong>{formatCount(totalMatches)}</strong>
+      </p>
+    </div>
+  );
+};
+
 const formatMatchBadge = (score: number | undefined, topScore: number) => {
   if (!topScore || !score) return "Match Score: —";
   if (score === topScore) return "Priority Pick";
@@ -67,12 +180,13 @@ const DressList = ({
   totalCount,
   pageInfo,
   debugMeta,
+  sectionOrder = [],
+  selectedOrder = {},
   isLoading = false,
   error = null,
   onRetry,
 }: Props) => {
   if (isLoading) {
-    
     return (
       <div className="flex-1">
         <h2 className="text-2xl font-bold mb-4">Results</h2>
@@ -105,10 +219,14 @@ const DressList = ({
     );
   }
 
+  const selectionTokens = useMemo(
+    () => buildSelectionTokens(sectionOrder, selectedOrder),
+    [sectionOrder, selectedOrder]
+  );
+
   const topScore = dresses.reduce((max, dress) => Math.max(max, dress.score ?? 0), 0);
 
   return (
-    
     <div className="flex-1">
       <div className="flex items-baseline justify-between mb-4">
         <h2 className="text-2xl font-bold">Results</h2>
@@ -130,11 +248,51 @@ const DressList = ({
       <div className="grid gap-6">
         {dresses.map((dress) => {
           const badgeLabel = formatMatchBadge(dress.score, topScore);
+          const tokens = keysForDress(dress);
+          let totalMatches = 0;
+          let highPriorityMatches = 0;
+
+          tokens.forEach((token) => {
+            if (selectionTokens.selectedTokens.has(token)) {
+              totalMatches += 1;
+              if (selectionTokens.highPriorityTokens.has(token)) {
+                highPriorityMatches += 1;
+              }
+            }
+          });
+
+          const insightLabel = `This item has ${formatCount(
+            highPriorityMatches
+          )} you selected as higher priorities. It has ${formatCount(totalMatches)} you selected overall.`;
+          const tooltipId = `match-tooltip-${dress.id}`;
+
           return (
             <div
               key={dress.id}
-              className="flex bg-mauve-50 border border-mauve-200 rounded-2xl shadow p-6 transition hover:shadow-md"
+              className="relative flex bg-mauve-50 border border-mauve-200 rounded-2xl shadow p-6 transition hover:shadow-md"
             >
+              {totalMatches > 0 && (
+                <div
+                  className="absolute right-4 top-4 flex flex-col items-end group"
+                  data-testid={`match-insights-${dress.id}`}
+                >
+                  <button
+                    type="button"
+                    aria-label={insightLabel}
+                    aria-describedby={tooltipId}
+                    className="rounded-full bg-transparent p-1 text-emerald-500 shadow-none transition-transform duration-150 ease-out hover:text-emerald-400 focus:outline-none focus:ring focus:ring-emerald-200/50 group-hover:scale-105 group-focus-visible:scale-105"
+                  >
+                    <CheckCircle2 aria-hidden size={22} />
+                  </button>
+                  <TooltipContent
+                    id={tooltipId}
+                    highPriorityMatches={highPriorityMatches}
+                    totalMatches={totalMatches}
+                    selectedOrder={selectedOrder}
+                  />
+                </div>
+              )}
+
               <div className="flex-1 pr-6">
                 <h3 className="text-xl font-semibold text-mauve-900 mb-2">{dress.name}</h3>
                 <div className="grid grid-cols-2 gap-2 text-sm text-mauve-800">

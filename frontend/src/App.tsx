@@ -225,6 +225,8 @@ export default function App() {
           totalCount={results?.total_count ?? 0}
           pageInfo={results?.pageInfo}
           debugMeta={results?.debug}
+          sectionOrder={sectionOrder}
+          selectedOrder={selectedOrder}
           isLoading={isLoading && dresses.length === 0}
           error={error}
           onRetry={fetchDresses}
