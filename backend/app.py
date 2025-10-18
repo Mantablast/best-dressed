@@ -31,7 +31,23 @@ SECTION_DOMINANCE_BASE = float(os.getenv("DYNAMIC_SCORING_SECTION_BASE", 5.0))
 VALUE_DECAY = float(os.getenv("DYNAMIC_SCORING_VALUE_DECAY", 0.65))
 
 db = SQLAlchemy(app)
-CORS(app)
+
+_allowed_origins_env = os.getenv(
+    "CORS_ALLOWED_ORIGINS",
+    "https://best-dressed.vercel.app,http://localhost:5173,http://127.0.0.1:5173",
+)
+_allowed_origins = [origin.strip() for origin in _allowed_origins_env.split(",") if origin.strip()]
+if not _allowed_origins:
+    _allowed_origins = ["*"]
+
+CORS(
+    app,
+    resources={r"/api/*": {"origins": _allowed_origins}},
+    supports_credentials=False,
+    allow_headers=["Content-Type", "Accept"],
+    methods=["GET", "POST", "OPTIONS"],
+    max_age=86400,
+)
 
 
 # Model
