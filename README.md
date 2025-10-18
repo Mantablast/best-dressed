@@ -20,7 +20,7 @@ Users can drag entire filter sections *and* individual selected values to rank t
 |------------------------|----------------------------------------------------------------------|
 | **Frontend**            | [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/), [Tailwind CSS](https://tailwindcss.com/), [dnd-kit](https://dndkit.com/) |
 | **Backend**             | [Flask](https://flask.palletsprojects.com/), [Flask-CORS](https://flask-cors.readthedocs.io/), [gunicorn](https://gunicorn.org/) |
-| **Database**             | [PostgreSQL](https://www.postgresql.org/) via [Supabase](https://supabase.com/) |
+| **Database**             | SQLite for the demo (`backend/instance/dresses.db`), deploy target [PostgreSQL](https://www.postgresql.org/) via [Supabase](https://supabase.com/) |
 | **Storage (images)**     | [Supabase Storage](https://supabase.com/storage) (public bucket) |
 | **Hosting**                | Frontend: [Vercel](https://vercel.com/)<br>Backend: [Render](https://render.com/) |
 | **Dev Tools**               | npm, [concurrently](https://www.npmjs.com/package/concurrently), [axios](https://axios-http.com/) |
@@ -64,7 +64,8 @@ pip install -r requirements.txt
 # (Optional) Seed the database
 python seed.py
 
-# Start the backend
+# Enable dynamic scoring (feature flag) and start the backend
+export ENABLE_DYNAMIC_SCORING=true
 python app.py
 ```
 
@@ -82,6 +83,65 @@ echo "VITE_IMG_BASE_URL=http://127.0.0.1:5050/static/images" >> .env
 
 # run local dev server
 npm run dev
+```
+
+---
+
+## 🔢 Dynamic Scoring API
+
+`POST /api/dresses` accepts either explicit weights or ordered priorities. With the feature flag enabled the backend derives canonical weights from user drag order.
+
+```jsonc
+{
+  "filters": {
+    "fabric": ["Lace"],
+    "price": ["1500-2000"]
+  },
+  "priority": {
+    "sections": ["color", "fabric"],
+    "values": {
+      "color": ["ivory", "champagne"],
+      "fabric": ["lace", "organza"]
+    }
+  },
+  "page": { "limit": 24, "offset": 0 },
+  "debug": false
+}
+```
+
+Response (abridged):
+
+```jsonc
+{
+  "items": [{ "id": 1, "name": "Celestial Lace", "score": 16384.0, "...": "..." }],
+  "total_count": 10,
+  "pageInfo": { "limit": 24, "offset": 0, "returned": 10, "hasNextPage": false },
+  "debug": {
+    "weights_source": "priority",
+    "duration_ms": 3.8,
+    "score_stats": { "min": 0, "median": 4096, "max": 16384 }
+  }
+}
+```
+
+- Supply `debug: true` to include section-level scoring traces.
+- `docs/perf/dynamic_scoring.md` contains the latest query-plan snapshots.
+
+---
+
+## ✅ Testing
+
+```bash
+# backend
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pytest
+
+# frontend type-check + production build
+cd frontend
+npm run build
 ```
 
 ---
