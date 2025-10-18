@@ -69,6 +69,7 @@ const buildSelectionTokens = (
 ) => {
   const highPriorityTokens = new Set<string>();
   const selectedTokens = new Set<string>();
+  let totalSelectedCount = 0;
 
   sectionOrder.forEach((section) => {
     const key = normalize(section ?? "");
@@ -79,6 +80,7 @@ const buildSelectionTokens = (
       if (!normalizedItem) return;
       const token = `${key}:${normalizedItem}`;
       selectedTokens.add(token);
+       totalSelectedCount += 1;
       const valueWeight = Math.pow(VALUE_DECAY, index);
       if (valueWeight >= HIGH_PRIORITY_VALUE_WEIGHT_THRESHOLD) {
         highPriorityTokens.add(token);
@@ -86,7 +88,7 @@ const buildSelectionTokens = (
     });
   });
 
-  return { selectedTokens, highPriorityTokens };
+  return { selectedTokens, highPriorityTokens, totalSelectedCount };
 };
 
 const keysForDress = (dress: Dress): Set<string> => {
@@ -132,22 +134,11 @@ type TooltipProps = {
   id: string;
   highPriorityMatches: number;
   totalMatches: number;
-  selectedOrder: Record<string, string[] | undefined>;
+  totalSelectedCount: number;
 };
 
-const TooltipContent = ({ id, highPriorityMatches, totalMatches, selectedOrder }: TooltipProps) => {
-  const highPrioritySelections = useMemo(() => {
-    let count = 0;
-    Object.values(selectedOrder).forEach((arr) => {
-      if (!Array.isArray(arr)) return;
-      arr.slice(0, 3).forEach((item) => {
-        if (normalize(item ?? "")) count += 1;
-      });
-    });
-    return count;
-  }, [selectedOrder]);
-
-  const topLabel = highPrioritySelections >= 3 ? "top 3" : `top ${highPrioritySelections || 0}`;
+const TooltipContent = ({ id, highPriorityMatches, totalMatches, totalSelectedCount }: TooltipProps) => {
+  const topLabel = totalSelectedCount >= 3 ? "top 3" : `top ${Math.max(totalSelectedCount, 1)}`;
 
   return (
     <div
@@ -156,9 +147,7 @@ const TooltipContent = ({ id, highPriorityMatches, totalMatches, selectedOrder }
       className="pointer-events-none mt-2 max-w-xs origin-top-right rounded-lg border border-emerald-200 bg-white/95 px-3 py-2 text-xs text-emerald-900 shadow-lg opacity-0 translate-y-1 transition-all duration-150 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:translate-y-0"
     >
       <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-emerald-700">Match insight</p>
-      <p className="mt-1 leading-snug">
-        This item has <strong>{formatCount(highPriorityMatches)}</strong> in your {topLabel}.
-      </p>
+      <p className="mt-1 leading-snug">This item has <strong>{formatCount(highPriorityMatches)}</strong> in your {topLabel}.</p>
       <p className="mt-1 leading-snug">
         Overall matches: <strong>{formatCount(totalMatches)}</strong>
       </p>
@@ -223,6 +212,7 @@ const DressList = ({
     () => buildSelectionTokens(sectionOrder, selectedOrder),
     [sectionOrder, selectedOrder]
   );
+  const { selectedTokens, highPriorityTokens, totalSelectedCount } = selectionTokens;
 
   const topScore = dresses.reduce((max, dress) => Math.max(max, dress.score ?? 0), 0);
 
@@ -253,17 +243,16 @@ const DressList = ({
           let highPriorityMatches = 0;
 
           tokens.forEach((token) => {
-            if (selectionTokens.selectedTokens.has(token)) {
+            if (selectedTokens.has(token)) {
               totalMatches += 1;
-              if (selectionTokens.highPriorityTokens.has(token)) {
+              if (highPriorityTokens.has(token)) {
                 highPriorityMatches += 1;
               }
             }
           });
 
-          const insightLabel = `This item has ${formatCount(
-            highPriorityMatches
-          )} you selected as higher priorities. It has ${formatCount(totalMatches)} you selected overall.`;
+          const topLabel = totalSelectedCount >= 3 ? "top 3" : `top ${Math.max(totalSelectedCount, 1)}`;
+          const insightLabel = `This item has ${formatCount(highPriorityMatches)} in your ${topLabel}. Overall matches: ${formatCount(totalMatches)}.`;
           const tooltipId = `match-tooltip-${dress.id}`;
 
           return (

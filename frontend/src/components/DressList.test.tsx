@@ -49,7 +49,7 @@ describe("DressList match insights", () => {
     );
 
     expect(
-      screen.getByLabelText(/This item has 2 features you selected as higher priorities\. It has 2 features you selected overall\./)
+      screen.getByLabelText(/This item has 2 features in your top 3\. Overall matches: 2 features\./)
     ).toBeInTheDocument();
   });
 
@@ -63,7 +63,7 @@ describe("DressList match insights", () => {
     );
 
     expect(
-      screen.getByLabelText(/This item has 1 feature you selected as higher priorities\. It has 1 feature you selected overall\./)
+      screen.getByLabelText(/This item has 1 feature in your top 3\. Overall matches: 1 feature\./)
     ).toBeInTheDocument();
   });
 
@@ -77,5 +77,20 @@ describe("DressList match insights", () => {
     );
 
     expect(screen.queryByTestId("match-insights-33")).not.toBeInTheDocument();
+  });
+
+  it("adjusts the top label when fewer than three priorities exist", () => {
+    render(
+      <DressList
+        dresses={[createDress({ id: 44 })]}
+        totalCount={1}
+        sectionOrder={["Color"]}
+        selectedOrder={{ color: ["Ivory"] }}
+      />
+    );
+
+    expect(
+      screen.getByLabelText(/This item has 1 feature in your top 1\. Overall matches: 1 feature\./)
+    ).toBeInTheDocument();
   });
 });
