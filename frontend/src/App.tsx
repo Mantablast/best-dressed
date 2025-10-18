@@ -65,6 +65,7 @@ const DEFAULT_SECTION_ORDER = [
 
 const PAGE_SIZE = 24;
 const DEBUG_SCORING = (import.meta as any)?.env?.VITE_DEBUG_SCORING === "true";
+const BACKGROUND_URL = "/assets/bg.png";
 
 async function fetchWithRetry(
   url: string,
@@ -199,47 +200,56 @@ export default function App() {
   const dresses = results?.items ?? [];
 
   return (
-    <div>
-      <div style={{ textAlign: "center", marginBottom: "20px" }}>
-        <h3 className="font-bold mb-4">Best Dressed - Priority Search Concept</h3>
-        <p style={{ maxWidth: "800px", margin: "0 auto" }}>
-          A search filter proof of concept that allows users to choose and sort filter items by priority to have
-          the closest priority match displayed to them with a real-time priority score. It aids the user with their
-          decision making, making a basic filter search a much more customized experience. Update Sep 13, 2025: I have
-          just recently learned that this concept is called lexicographic ordering.
-        </p>
-      </div>
+    <div
+      className="min-h-screen bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: `url(${BACKGROUND_URL})` }}
+    >
+      <div className="min-h-screen bg-white/80 backdrop-blur-sm">
+        <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-10 lg:px-10">
+          <header className="text-center mb-10">
+            <h3 className="font-bold mb-4 text-2xl text-mauve-900">Best Dressed - Priority Search Concept</h3>
+            <p className="mx-auto max-w-3xl text-sm text-mauve-800">
+              A search filter proof of concept that allows users to choose and sort filter items by priority to have
+              the closest priority match displayed to them with a real-time priority score. It aids the user with their
+              decision making, making a basic filter search a much more customized experience. Update Sep 13, 2025: I have
+              just recently learned that this concept is called lexicographic ordering.
+            </p>
+          </header>
 
-      <div className="min-h-screen bg-mauve-50 p-8 flex gap-8">
-        <FilterPanel
-          filters={filters}
-          setFilters={setFilters}
-          sectionOrder={sectionOrder}
-          setSectionOrder={setSectionOrder}
-          selectedOrder={selectedOrder}
-          setSelectedOrder={setSelectedOrder}
-        />
+          <main className="flex-1 rounded-3xl border border-white/40 bg-mauve-50/85 p-6 shadow-2xl backdrop-blur-sm lg:p-8">
+            <div className="flex flex-col gap-8 lg:flex-row">
+              <FilterPanel
+                filters={filters}
+                setFilters={setFilters}
+                sectionOrder={sectionOrder}
+                setSectionOrder={setSectionOrder}
+                selectedOrder={selectedOrder}
+                setSelectedOrder={setSelectedOrder}
+              />
 
-        <DressList
-          dresses={dresses}
-          totalCount={results?.total_count ?? 0}
-          pageInfo={results?.pageInfo}
-          debugMeta={results?.debug}
-          sectionOrder={sectionOrder}
-          selectedOrder={selectedOrder}
-          isLoading={isLoading && dresses.length === 0}
-          error={error}
-          onRetry={fetchDresses}
-        />
-      </div>
+              <DressList
+                dresses={dresses}
+                totalCount={results?.total_count ?? 0}
+                pageInfo={results?.pageInfo}
+                debugMeta={results?.debug}
+                sectionOrder={sectionOrder}
+                selectedOrder={selectedOrder}
+                isLoading={isLoading && dresses.length === 0}
+                error={error}
+                onRetry={fetchDresses}
+              />
+            </div>
+          </main>
 
-      <div className="text-center mt-8">
-        <h3 className="font-bold mb-4 center">
-          Made with love, sweat, frustration, bugs and many snacks. 🍅{" "}
-          <a href="https://github.com/Mantablast" target="_blank" rel="noopener noreferrer">
-            -Aimee J
-          </a>
-        </h3>
+          <footer className="text-center mt-8 text-mauve-800">
+            <h3 className="font-bold mb-4">
+              Made with love, sweat, frustration, bugs and many snacks. 🍅{" "}
+              <a href="https://github.com/Mantablast" target="_blank" rel="noopener noreferrer" className="underline decoration-dashed">
+                -Aimee J
+              </a>
+            </h3>
+          </footer>
+        </div>
       </div>
     </div>
   );
