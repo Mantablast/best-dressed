@@ -1,0 +1,72 @@
+Dynamic Section + Value Scoring — Step‑by‑Step Implementation Plan
+=================================================================
+
+Goal: Support drag‑ordered sections and items (values) that translate into dynamic SQL weights, keep queries fast for 1k–5k+ items, and keep the UI buttery.
+
+0) Prep (branch + feature flag)
+   - Create a feature branch: feature/dynamic-scoring.
+   - Add a server flag `ENABLE_DYNAMIC_SCORING=true` so we can ship incrementally.
+
+1) Database: verify schema + indexes
+   - Ensure scalar columns (price, silhouette, fabric, has_pockets, collection, season) have BTREE indexes.
+   - Ensure array/JSONB columns (colors, tags, features, embellishments) have GIN indexes.
+   - Run ANALYZE after adding indexes.
+
+2) API contract changes
+   - Extend /dresses to accept either:
+     A) explicit weights:
+        weights: {
+          sectionKey: { section: number, values?: { [value: string]: number } }
+        }
+     B) or ordered lists:
+        priority: { sections: string[], values: { [sectionKey]: string[] } }
+   - Keep existing filters (arrays, booleans, priceMin/priceMax, limit/offset).
+
+3) Weight derivation (server OR client)
+   - Option A (client): Convert drag order → numbers before calling API.
+   - Option B (server): Accept ordered arrays; map positions to weights (e.g., exponential or linear).
+   - Choose a single canonical formula and document it:
+     • Section weight: e.g., section_w = 100, 80, 60, ... by order (or 2^(n-pos)).
+     • Item weight: e.g., item_w = 60, 50, 40, ... within each section.
+
+4) SQL implementation
+   - Implement one parameterized SQL that:
+     • Sums per‑value weights for array columns (e.g., colors).
+     • Picks the single matching value weight for single‑valued columns (fabric, silhouette).
+     • Multiplies each section’s value sum by that section’s weight.
+     • Adds toggle weights for booleans (e.g., has_pockets) if enabled.
+   - Keep WHERE filters identical to current behavior (ignore sections not filtered).
+   - ORDER BY score DESC, then secondary sort (price asc, id).
+
+5) Flask route and validation
+   - Validate payload shape (types, allowed section keys, numeric ranges).
+   - Default missing weights to 0 (COALESCE in SQL).
+   - Enforce LIMIT caps (e.g., max 48) and safe OFFSET.
+   - Return: items[], total_count, pageInfo, and optionally debug:score when ?debug=1.
+
+6) Frontend wiring
+   - Keep two pieces of state: selectedFilters and priority (sections + per‑section item order).
+   - Add helper: buildWeights(sectionsOrder, itemsMap) → weights JSON.
+   - Debounce 250–300ms; cancel inflight fetches (AbortController or TanStack Query).
+   - Infinite scroll or “Load more”; prefetch next page thumbnails.
+   - Optional: show a small “match score” badge when debug=1.
+
+7) Performance & correctness
+   - Add EXPLAIN (ANALYZE) snapshots for common queries to /docs/perf.
+   - Confirm bitmap index AND is used; adjust enable_seqscan off during testing if needed.
+   - Add P95 latency logs around the endpoint in Flask middleware.
+
+8) Tests (see overall test plan in repo)
+   - Unit: weight derivation (drag order → numbers).
+   - SQL/Integration: known fixtures → expected score ranking.
+   - Property tests: adding an extra preferred color never reduces score.
+   - E2E: Playwright flow toggling filters + pagination.
+
+9) Feature rollout
+   - Behind feature flag for internal testing.
+   - Add telemetry for score distribution and endpoint latency.
+   - Remove flag after stabilizing.
+
+10) Documentation
+   - README: section on “Dynamic Scoring & Priority,” with examples.
+   - API docs: payload shapes, stability guarantees, versioning policy.
