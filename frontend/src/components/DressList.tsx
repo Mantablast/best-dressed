@@ -277,7 +277,7 @@ const DressList = ({
                     id={tooltipId}
                     highPriorityMatches={highPriorityMatches}
                     totalMatches={totalMatches}
-                    selectedOrder={selectedOrder}
+                    totalSelectedCount={totalSelectedCount}
                   />
                 </div>
               )}
