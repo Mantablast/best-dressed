@@ -1,7 +1,31 @@
-# 👰‍♀️ Best Dressed
+# 👰‍♀️ Best Dressed - E-Commerce Lexicographical Shopping Filter
+
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=FFD23F)
+![Tailwind_CSS](https://img.shields.io/badge/Tailwind_CSS-0EA5E9?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
+![Pytest](https://img.shields.io/badge/Pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
+![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+![Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)
 
 A modern full-stack demo for **priority-based filtering** — that just so happens to be about wedding dresses.  
 Built for fun. Stayed for the filters.  Fancy dresses are not a topic I know anything about… so why not learn? 💅
+![Filter Panel](./frontend/public/Screenshot.png)
+---
+
+## ⚙️ Where Scoring Happens
+
+1. **Payload builder (frontend/src/utils/buildPriorityPayload.ts)**  
+   Normalises the drag-and-drop state into a structured `priority` payload (`sections` + per-section order) every time filters change.
+2. **Scoring engine (backend/app.py)**  
+   Applies feature-flagged dynamic scoring: derives canonical section weights, sums value weights for arrays, picks the best scalar match, logs telemetry, and returns ranked results.
+3. **Presentation layer (frontend/src/components/DressList.tsx)**  
+   Consumes the server-issued score, provides lexicographic match badges, and surfaces hover tooltips (“top 3” insights) so users understand why an item ranks highly.
+
+Filters still happen in SQL, but the ranking logic currently lives in Python to accommodate SQLite’s pickled array columns. Move to PostgreSQL JSON/ARRAY and the scoring formula can hop into SQL with minor tweaks.
 
 ---
 
@@ -18,12 +42,13 @@ Users can drag entire filter sections *and* individual selected values to rank t
 
 | Layer                 | Tooling                                                                 |
 |------------------------|----------------------------------------------------------------------|
-| **Frontend**            | [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/), [Tailwind CSS](https://tailwindcss.com/), [dnd-kit](https://dndkit.com/) |
+| **Frontend**            | [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/), [Tailwind CSS](https://tailwindcss.com/), [dnd-kit](https://dndkit.com/), [Lucide Icons](https://lucide.dev/) |
 | **Backend**             | [Flask](https://flask.palletsprojects.com/), [Flask-CORS](https://flask-cors.readthedocs.io/), [gunicorn](https://gunicorn.org/) |
-| **Database**             | SQLite for the demo (`backend/instance/dresses.db`), deploy target [PostgreSQL](https://www.postgresql.org/) via [Supabase](https://supabase.com/) |
+| **Database**             | SQLite for the demo (`backend/instance/dresses.db`) with BTREE + planned GIN indexes, deploy target [PostgreSQL](https://www.postgresql.org/) via [Supabase](https://supabase.com/) |
 | **Storage (images)**     | [Supabase Storage](https://supabase.com/storage) (public bucket) |
 | **Hosting**                | Frontend: [Vercel](https://vercel.com/)<br>Backend: [Render](https://render.com/) |
-| **Dev Tools**               | npm, [concurrently](https://www.npmjs.com/package/concurrently), [axios](https://axios-http.com/) |
+| **Testing**               | [Pytest](https://pytest.org/) for backend scoring, [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/) for React |
+| **Dev Tools**               | npm, [axios](https://axios-http.com/), feature flags, match insight telemetry |
 
 ---
 
@@ -125,7 +150,17 @@ Response (abridged):
 ```
 
 - Supply `debug: true` to include section-level scoring traces.
-- `docs/perf/dynamic_scoring.md` contains the latest query-plan snapshots.
+- UI also surfaces a hover badge with “top 3” and overall match counts per dress.
+- `docs/perf/dynamic_scoring.md` contains the latest query-plan snapshots and indexing notes.
+
+---
+
+## 🗄️ Database & SQL Notes
+
+- Demo runs on SQLite (`backend/instance/dresses.db`); production points at Supabase/PostgreSQL.
+- Schema (`backend/seed.sql`) includes BTREE indexes for scalar columns and GIN indexes for arrays (tags, embellishments, features, etc.). The Flask boot sequence mirrors these CREATE INDEX statements defensively.
+- After index creation the app executes `ANALYZE wedding_dresses` so the planner keeps bitmap index scans available once the table grows beyond demo size.
+- Array-valued columns are stored as pickled lists in SQLite; the scoring engine loads them into Python sets and multiplies matches by section weight. PostgreSQL deployments can swap in JSON/ARRAY columns and move this logic into pure SQL if desired.
 
 ---
 
@@ -139,8 +174,10 @@ source venv/bin/activate
 pip install -r requirements.txt
 pytest
 
-# frontend type-check + production build
+# frontend
 cd frontend
+npm install
+npm run test   # Vitest + Testing Library
 npm run build
 ```
 
@@ -150,7 +187,7 @@ npm run build
 
 | Filter Panel (Drag + Drop) | Live Priority Results |
 |------------------------------|-------------------------|
-| ![Filter Panel](./screenshots/filter-panel.png) | ![Priority Results](./screenshots/priority-results.png) |
+| ![Filter Panel](./frontend/public/Screenshot.png) | ![Priority Results](./frontend/public/Screenshot2.png) |
 
 > 📌 *Add screenshots to `/screenshots` folder as `filter-panel.png` and `priority-results.png` to make them appear here.*
 
