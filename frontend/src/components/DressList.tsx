@@ -180,7 +180,7 @@ const DressList = ({
       <div className="flex-1">
         <h2 className="text-2xl font-bold mb-4">Results</h2>
         <div className="grid gap-6">
-          <div className="text-sm text-black/70 animate-pulse">Scoring dresses…</div>
+          <div className="text-sm text-black/70 animate-pulse">Welcome!  I keep this demo on a low-cost basis.  It may intially take a minute or two to load.  Thanks for your patience.</div>
         </div>
       </div>
     );
