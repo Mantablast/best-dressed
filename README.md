@@ -1,19 +1,28 @@
-# 👰‍♀️ Best Dressed - E-Commerce Lexicographical Shopping Filter
+# 👰‍♀️ Best Dressed - E-Commerce Multi-Criteria Decision Analysis Filter
 
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=FFD23F)
-![Tailwind_CSS](https://img.shields.io/badge/Tailwind_CSS-0EA5E9?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
-![Pytest](https://img.shields.io/badge/Pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
-![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
-![Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)
+<p align="center">
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=FFD23F" alt="Vite" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-0EA5E9?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask" />
+  <img src="https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
+  <img src="https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white" alt="Vitest" />
+  <img src="https://img.shields.io/badge/Pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest" />
+  <img src="https://img.shields.io/badge/Frontend-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Frontend Vercel" />
+  <img src="https://img.shields.io/badge/Backend-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Backend Render" />
+</p>
 
-A modern full-stack demo for **priority-based filtering** — that just so happens to be about wedding dresses.  
-Built for fun. Stayed for the filters.  Fancy dresses are not a topic I know anything about… so why not learn? 💅
-![Filter Panel](./frontend/public/Screenshot.png)
+Best Dressed uses a deterministic weighted scoring model, a form of multi-criteria decision analysis (MCDA), to rank dresses based on user-defined priorities and preferences.
+Unlike a machine learning model, this scoring model follows an explicit mathematical formula where each selected attribute contributes a weighted value to the total score.
+
+<p align="center">
+  <img src="./frontend/public/SQLformula.png" alt="Final Formula" />
+</p>
+
+<p align="center">
+  <img src="./frontend/public/Screenshot.png" alt="Filter Panel" />
+</p>
 ---
 
 ## ⚙️ Where Scoring Happens
@@ -186,8 +195,8 @@ npm run build
 ## 🌸 Screenshots
 
 | Filter Panel (Drag + Drop) | Live Priority Results |
-|------------------------------|-------------------------|
-| ![Filter Panel](./frontend/public/Screenshot.png) | ![Priority Results](./frontend/public/Screenshot2.png) |
+|:--------------------------:|:---------------------:|
+| <img src="./frontend/public/Screenshot.png" alt="Filter Panel" /> | <img src="./frontend/public/Screenshot2.png" alt="Priority Results" /> |
 
 > 📌 *Add screenshots to `/screenshots` folder as `filter-panel.png` and `priority-results.png` to make them appear here.*
 
@@ -209,8 +218,3 @@ Built with:
 - much perseverance
 - and more error messages than anyone should ever see 😅
 
-
-## One Last Note*!*
-While deploying to vercel, many changes had to be made to the repo to get through many typescript errors.
-TODO: Make a local run friendly version from previous commits and save it as a local-run branch.
-Thanks! -AJ

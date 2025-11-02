@@ -211,8 +211,7 @@ export default function App() {
             <p className="mx-auto max-w-3xl text-sm text-mauve-800">
               A search filter proof of concept that allows users to choose and sort filter items by priority to have
               the closest priority match displayed to them with a real-time priority score. It aids the user with their
-              decision making, making a basic filter search a much more customized experience. Update Sep 13, 2025: I have
-              just recently learned that this concept is called lexicographic ordering.
+              decision making, making a basic filter search a much more customized experience.
             </p>
           </header>
 
